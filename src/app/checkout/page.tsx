@@ -101,10 +101,10 @@ export default function CheckoutPage() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-white shadow-sm px-4 py-3 flex items-center gap-3">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center
                      hover:bg-stone-200 transition-colors shrink-0"
-          aria-label="Volver"
+          aria-label="Volver al inicio"
         >
           <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />

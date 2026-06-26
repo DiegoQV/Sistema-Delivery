@@ -6,7 +6,7 @@ import { useCarrito } from "@/context/CarritoContext";
 import { RESTAURANTES_MOCK } from "@/data/mock";
 import { ZONAS } from "@/data/zonas";
 import { generarEnlaceWhatsApp } from "@/lib/whatsapp";
-import type { Restaurante, Producto, MetodoPago, Zona } from "@/types";
+import type { Restaurante, Producto, MetodoPago, Zona, EstadoCarrito } from "@/types";
 
 // ─── Datos mock de platos ─────────────────────────────────────────────────────
 const PLATOS_MOCK: Record<string, Producto[]> = {
@@ -112,7 +112,7 @@ export default function HomePage() {
       </div>
 
       <NavbarInferior
-        vistaActual={vistaActual} totalItems={totalItems}
+        vistaActual={vistaActual} totalItems={totalItems} subtotal={subtotal}
         onInicio={irAInicio} onCarrito={irACarrito}
       />
     </div>
@@ -349,11 +349,10 @@ function VistaCarrito({onVolver,totalItems,subtotal}:{onVolver:()=>void;totalIte
   );
   return <ChatbotPedido onVolver={onVolver} totalItems={totalItems} subtotal={subtotal} carrito={carrito}/>;
 }
-
 // ─── Chatbot de pedido ────────────────────────────────────────────────────────
 function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
   onVolver:()=>void; totalItems:number; subtotal:number;
-  carrito:{items:{producto:{id:string;nombre:string;precio:number};cantidad:number}[];restaurante_id:string|null;restaurante_nombre:string|null;restaurante_telefono_wa:string|null;restaurante_qr_yape_url:string|null};
+  carrito:EstadoCarrito;
 }) {
   const [paso,setPaso]               = useState<PasoChat>("nombre");
   const [mensajes,setMensajes]       = useState<MensajeChat[]>([]);
@@ -440,7 +439,7 @@ function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
     const enlace = generarEnlaceWhatsApp({
       pedidoId, clienteNombre:nombre, clienteTelefono:telefono,
       direccion, zona:zonaSeleccionada,
-      items: carrito.items.map(i=>({producto:i.producto as Parameters<typeof generarEnlaceWhatsApp>[0]["items"][0]["producto"],cantidad:i.cantidad})),
+      items: carrito.items,
       subtotal, costoEnvio, total, metodoPago:metodoPago as MetodoPago,
       telefonoNegocio: carrito.restaurante_telefono_wa??NUMERO_MOTORIZADO,
     });
@@ -562,8 +561,8 @@ function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
 }
 
 // ─── Navbar inferior flotante ─────────────────────────────────────────────────
-function NavbarInferior({vistaActual,totalItems,onInicio,onCarrito}:{
-  vistaActual:Vista; totalItems:number; onInicio:()=>void; onCarrito:()=>void;
+function NavbarInferior({vistaActual,totalItems,subtotal,onInicio,onCarrito}:{
+  vistaActual:Vista; totalItems:number; subtotal:number; onInicio:()=>void; onCarrito:()=>void;
 }) {
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[390px]">
@@ -608,7 +607,7 @@ function NavbarInferior({vistaActual,totalItems,onInicio,onCarrito}:{
           </div>
           <div>
             <p className="text-xs font-bold leading-none">{totalItems>0?"Ver carrito":"Carrito"}</p>
-            {totalItems>0 && <p className="text-[11px] font-extrabold mt-0.5 text-orange-100">S/. {(0).toFixed(2)}</p>}
+            {totalItems>0 && <p className="text-[11px] font-extrabold mt-0.5 text-orange-100">S/. {subtotal.toFixed(2)}</p>}
           </div>
         </button>
       </nav>
