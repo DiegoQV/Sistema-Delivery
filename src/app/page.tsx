@@ -450,14 +450,14 @@ function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
+
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0">
         <button onClick={onVolver} aria-label="Volver" className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
           <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/>
           </svg>
         </button>
-        {/* Avatar bot */}
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-lg shadow-md shadow-orange-200">🤖</div>
         <div className="flex-1">
           <p className="font-extrabold text-slate-900 text-sm leading-tight">Asistente ChachaFast</p>
@@ -471,91 +471,120 @@ function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
         </div>
       </header>
 
-      {/* Burbujass */}
-      <div ref={chatRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+      {/* Área de mensajes — crece y hace scroll, con padding bottom para no quedar bajo el panel fijo */}
+      <div ref={chatRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-6">
         {mensajes.map(m=>(
           <div key={m.id} className={`flex gap-2 ${m.tipo==="usuario"?"justify-end":"justify-start"}`}>
             {m.tipo==="bot" && (
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-sm shrink-0 mt-0.5 shadow-sm">🤖</div>
             )}
-            <div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm whitespace-pre-line
-                            ${m.tipo==="bot"
-                              ?"bg-white text-slate-800 rounded-tl-sm border border-slate-100"
-                              :"bg-orange-600 text-white rounded-tr-sm"}`}
-              dangerouslySetInnerHTML={{__html:m.texto.replace(/\*(.*?)\*/g,"<strong>$1</strong>").replace(/_(.*?)_/g,"<em>$1</em>")}}>
-            </div>
+            <div
+              className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm whitespace-pre-line
+                          ${m.tipo==="bot"
+                            ?"bg-white text-slate-800 rounded-tl-sm border border-slate-100"
+                            :"bg-orange-600 text-white rounded-tr-sm"}`}
+              dangerouslySetInnerHTML={{__html:m.texto.replace(/\*(.*?)\*/g,"<strong>$1</strong>").replace(/_(.*?)_/g,"<em>$1</em>")}}
+            />
           </div>
         ))}
-
-        {/* Opciones rápidas según paso */}
-        {paso==="zona" && (
-          <div className="flex flex-col gap-2 pl-10">
-            {ZONAS.map(z=>(
-              <button key={z.id} onClick={()=>seleccionarZona(z)}
-                className="text-left bg-white border border-slate-200 hover:border-orange-400 hover:bg-orange-50
-                           rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-150 shadow-sm">
-                📍 {z.nombre} — {z.costo_envio===null?"A coordinar":`S/. ${z.costo_envio.toFixed(2)}`}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {paso==="pago" && (
-          <div className="flex gap-2 pl-10">
-            {(["efectivo","yape"] as MetodoPago[]).map(m=>(
-              <button key={m} onClick={()=>seleccionarPago(m)}
-                className="flex-1 bg-white border border-slate-200 hover:border-orange-400 hover:bg-orange-50
-                           rounded-2xl px-3 py-3 flex flex-col items-center gap-1 transition-all duration-150 shadow-sm">
-                <span className="text-2xl">{m==="efectivo"?"💵":"📱"}</span>
-                <span className="text-xs font-bold text-slate-700">{m==="efectivo"?"Efectivo":"Yape / Plin"}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {paso==="confirmacion" && (
-          <div className="pl-10">
-            <button onClick={confirmarPedido}
-              className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white font-extrabold
-                         py-4 rounded-2xl text-sm shadow-lg shadow-emerald-200 flex items-center justify-center gap-2
-                         hover:from-emerald-600 hover:to-green-600 transition-all duration-200">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.852L.057 23.57a.5.5 0 00.616.635l5.92-1.55A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.803 9.803 0 01-5.028-1.382l-.36-.214-3.722.975.992-3.624-.234-.373A9.787 9.787 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
-              </svg>
-              Confirmar y enviar al motorizado
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Input de texto (pasos nombre, dirección/teléfono) */}
-      {(paso==="nombre"||(paso==="direccion")) && (
-        <div className="px-4 pb-24 pt-2 bg-white border-t border-slate-100">
+      {/* ── Panel de acción fijo — SIEMPRE visible encima de la navbar ── */}
+      <div className="shrink-0 bg-white border-t border-slate-100 px-4 pt-3 pb-24 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+
+        {/* Input de texto: pasos nombre y dirección */}
+        {(paso==="nombre" || paso==="direccion") && (
           <div className="flex gap-2">
             <input
-              type={paso==="direccion"&&!telefono?"tel":"text"}
-              value={input} onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&enviarInput()}
-              maxLength={paso==="direccion"&&!telefono?9:undefined}
+              type={paso==="direccion" && !telefono ? "tel" : "text"}
+              value={input}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter" && enviarInput()}
+              maxLength={paso==="direccion" && !telefono ? 9 : undefined}
               placeholder={
-                paso==="nombre"?"Tu nombre completo..."
-                :!telefono?"Tu número de celular (9 dígitos)..."
-                :"Tu dirección exacta..."
+                paso==="nombre" ? "Tu nombre completo..."
+                : !telefono ? "Tu número de celular (9 dígitos)..."
+                : "Tu dirección exacta..."
               }
               className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-900 placeholder-slate-400 border border-transparent focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
               aria-label="Respuesta al chatbot"
             />
-            <button onClick={enviarInput}
-              className="w-11 h-11 rounded-full bg-orange-600 text-white flex items-center justify-center hover:bg-orange-700 transition-colors shadow-md shadow-orange-200"
-              aria-label="Enviar respuesta">
+            <button
+              onClick={enviarInput}
+              className="w-11 h-11 rounded-full bg-orange-600 text-white flex items-center justify-center hover:bg-orange-700 transition-colors shadow-md shadow-orange-200 shrink-0"
+              aria-label="Enviar respuesta"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
               </svg>
             </button>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Botones de zona */}
+        {paso==="zona" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Selecciona tu zona</p>
+            {ZONAS.map(z=>(
+              <button
+                key={z.id}
+                onClick={()=>seleccionarZona(z)}
+                className="w-full text-left bg-slate-50 border border-slate-200 hover:border-orange-400 hover:bg-orange-50
+                           active:bg-orange-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700
+                           transition-all duration-150 flex items-center justify-between"
+              >
+                <span>📍 {z.nombre}</span>
+                <span className="text-orange-600 font-bold text-xs">
+                  {z.costo_envio===null ? "A coordinar" : `S/. ${z.costo_envio.toFixed(2)}`}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Botones de método de pago */}
+        {paso==="pago" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">¿Cómo vas a pagar?</p>
+            <div className="flex gap-3">
+              {(["efectivo","yape"] as MetodoPago[]).map(m=>(
+                <button
+                  key={m}
+                  onClick={()=>seleccionarPago(m)}
+                  className="flex-1 bg-slate-50 border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50
+                             active:bg-orange-100 rounded-2xl px-3 py-4 flex flex-col items-center gap-2
+                             transition-all duration-150"
+                >
+                  <span className="text-3xl">{m==="efectivo"?"💵":"📱"}</span>
+                  <span className="text-sm font-bold text-slate-700">{m==="efectivo"?"Efectivo":"Yape / Plin"}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Botón confirmar pedido */}
+        {paso==="confirmacion" && (
+          <button
+            onClick={confirmarPedido}
+            className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white font-extrabold
+                       py-4 rounded-2xl text-sm shadow-lg shadow-emerald-200 flex items-center justify-center gap-2
+                       hover:from-emerald-600 hover:to-green-600 active:scale-[0.98] transition-all duration-200"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.852L.057 23.57a.5.5 0 00.616.635l5.92-1.55A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.803 9.803 0 01-5.028-1.382l-.36-.214-3.722.975.992-3.624-.234-.373A9.787 9.787 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+            </svg>
+            Confirmar y enviar al motorizado 🛵
+          </button>
+        )}
+
+        {/* Estado enviado — ya no hay acción pendiente */}
+        {paso==="nombre" || paso==="direccion" || paso==="zona" || paso==="pago" || paso==="confirmacion"
+          ? null
+          : <p className="text-center text-xs text-slate-400 py-2">Pedido procesado ✅</p>
+        }
+      </div>
     </div>
   );
 }
