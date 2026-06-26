@@ -7,6 +7,17 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Con output: 'export', Next.js requiere que las rutas dinámicas declaren
+ * generateStaticParams(). Esta página es un Client Component puro (SPA shell):
+ * no hace fetch de datos en el servidor — el `id` se consume en el cliente
+ * desde la URL. Retornamos array vacío para que Next.js genere el HTML shell
+ * y el router del browser resuelva el parámetro dinámico en runtime.
+ */
+export function generateStaticParams() {
+  return [];
+}
+
 export default function PedidoExitoPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();

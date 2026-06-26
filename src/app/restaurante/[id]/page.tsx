@@ -12,6 +12,15 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Con output: 'export', generamos una ruta estática por cada restaurante
+ * conocido en build time. En producción, reemplazar RESTAURANTES_MOCK
+ * por una llamada a la API de DynamoDB durante el build.
+ */
+export function generateStaticParams() {
+  return RESTAURANTES_MOCK.map((r) => ({ id: r.id }));
+}
+
 const CATEGORIA_CONFIG: Record<string, { bg: string; text: string }> = {
   Pollería: { bg: "bg-amber-50",   text: "text-amber-700"  },
   Menú:     { bg: "bg-green-50",   text: "text-green-700"  },
