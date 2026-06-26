@@ -300,7 +300,7 @@ function VistaMenu({restaurante,onVolver,agregar,incrementar,decrementar,carrito
       </div>
       {/* Platos */}
       <main className="flex-1 px-4 pt-4">
-        {[...porCategoria.entries()].map(([cat,ps])=>(
+        {Array.from(porCategoria.entries()).map(([cat,ps])=>(
           <section key={cat} className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px flex-1 bg-slate-100"/><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span><div className="h-px flex-1 bg-slate-100"/>

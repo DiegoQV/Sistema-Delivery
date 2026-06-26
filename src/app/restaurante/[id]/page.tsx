@@ -133,7 +133,7 @@ export default function RestaurantePage({ params }: Props) {
 
       {/* ── Menú ─────────────────────────────────────────────────────────── */}
       <main className="flex-1 px-4 py-5">
-        {[...productosPorCategoria.entries()].map(([categoria, prods]) => (
+        {Array.from(productosPorCategoria.entries()).map(([categoria, prods]) => (
           <section key={categoria} className="mb-7">
             {/* Encabezado de categoría */}
             <div className="flex items-center gap-2 mb-3">
