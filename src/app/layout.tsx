@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
-import { CarritoProvider } from "@/context/CarritoContext";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -26,11 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={nunito.variable}>
       <body className={`${nunito.className} bg-stone-200`}>
-        <CarritoProvider>
-          <div className="mx-auto max-w-[430px] min-h-screen bg-white shadow-2xl relative overflow-x-hidden">
-            {children}
-          </div>
-        </CarritoProvider>
+        <div className="mx-auto max-w-[430px] min-h-screen bg-white shadow-2xl relative overflow-x-hidden">
+          {children}
+        </div>
       </body>
     </html>
   );

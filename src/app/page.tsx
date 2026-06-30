@@ -1,891 +1,485 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useCarrito } from "@/context/CarritoContext";
-import { RESTAURANTES_MOCK } from "@/data/mock";
-import { ZONAS } from "@/data/zonas";
-import { generarEnlaceWhatsApp } from "@/lib/whatsapp";
-import type { Restaurante, Producto, MetodoPago, Zona, EstadoCarrito } from "@/types";
+import { useEffect, useRef, useState } from "react";
 
-// ─── Datos mock de platos ─────────────────────────────────────────────────────
-const PLATOS_MOCK: Record<string, Producto[]> = {
-  "rest-001": [
-    { id:"p-001", restaurante_id:"rest-001", nombre:"1/4 Pollo a la Brasa",    descripcion:"Con papas fritas y ensalada",          precio:18.0, categoria:"Platos",  disponible:true  },
-    { id:"p-002", restaurante_id:"rest-001", nombre:"1/2 Pollo a la Brasa",    descripcion:"Con papas fritas y ensalada",          precio:32.0, categoria:"Platos",  disponible:true  },
-    { id:"p-003", restaurante_id:"rest-001", nombre:"Pollo Entero",             descripcion:"Con papas, ensalada y cremas",         precio:58.0, categoria:"Platos",  disponible:true  },
-    { id:"p-004", restaurante_id:"rest-001", nombre:"Aguadito de Pollo",        descripcion:"Sopa cremosa con arroz y culantro",    precio:14.0, categoria:"Sopas",   disponible:true  },
-    { id:"p-005", restaurante_id:"rest-001", nombre:"Arroz con Leche",          descripcion:"Postre casero con canela",             precio: 6.0, categoria:"Postres", disponible:true  },
-    { id:"p-006", restaurante_id:"rest-001", nombre:"Gaseosa Personal",         descripcion:"Inca Kola o Coca Cola",                precio: 4.0, categoria:"Bebidas", disponible:true  },
-    { id:"p-007", restaurante_id:"rest-001", nombre:"Chicha Morada Jarra",      descripcion:"1 litro artesanal",                    precio: 8.0, categoria:"Bebidas", disponible:false },
-  ],
-  "rest-002": [
-    { id:"p-008", restaurante_id:"rest-002", nombre:"Menú del Día",             descripcion:"Sopa + segundo + refresco",            precio:12.0, categoria:"Menú",     disponible:true },
-    { id:"p-009", restaurante_id:"rest-002", nombre:"Caldo de Gallina",         descripcion:"Caldo casero con fideos y papa",       precio:10.0, categoria:"Sopas",    disponible:true },
-    { id:"p-010", restaurante_id:"rest-002", nombre:"Estofado de Pollo",        descripcion:"Con arroz y menestra",                 precio:14.0, categoria:"Segundos", disponible:true },
-    { id:"p-011", restaurante_id:"rest-002", nombre:"Trucha Frita",             descripcion:"Con papas sancochadas y ensalada",     precio:18.0, categoria:"Segundos", disponible:true },
-  ],
-  "rest-003": [
-    { id:"p-012", restaurante_id:"rest-003", nombre:"Pizza Americana Personal", descripcion:"Jamón, queso, hongos",                 precio:22.0, categoria:"Pizzas", disponible:true },
-    { id:"p-013", restaurante_id:"rest-003", nombre:"Pizza Familiar Mixta",     descripcion:"8 porciones, ingredientes a elección", precio:45.0, categoria:"Pizzas", disponible:true },
-    { id:"p-014", restaurante_id:"rest-003", nombre:"Pizza BBQ Pollo",          descripcion:"Con salsa BBQ y pollo ahumado",        precio:28.0, categoria:"Pizzas", disponible:true },
-  ],
-  "rest-004": [
-    { id:"p-015", restaurante_id:"rest-004", nombre:"Jugo de Cocona",           descripcion:"Fruta amazónica, vaso grande",         precio: 6.0, categoria:"Jugos",   disponible:true },
-    { id:"p-016", restaurante_id:"rest-004", nombre:"Batido de Aguaje",         descripcion:"Con leche, vaso grande",               precio: 7.0, categoria:"Batidos", disponible:true },
-    { id:"p-017", restaurante_id:"rest-004", nombre:"Jugo de Maracuyá",         descripcion:"Natural, sin azúcar añadida",          precio: 5.0, categoria:"Jugos",   disponible:true },
-  ],
-};
+type ServicioId = "compras" | "medicinas" | "paquetes" | "documentos" | "encomiendas" | "express";
 
-// ─── Tipos internos ───────────────────────────────────────────────────────────
-type Vista = "inicio" | "menu" | "carrito";
-type PasoChat = "nombre" | "direccion" | "zona" | "pago" | "confirmacion";
+interface Servicio {
+  id: ServicioId;
+  titulo: string;
+  descripcion: string;
+  etiqueta: string;
+  estilo: string;
+  preguntas: string[];
+}
 
 interface MensajeChat {
   id: string;
-  tipo: "bot" | "usuario";
+  autor: "asistente" | "usuario";
   texto: string;
 }
 
-// ─── Constantes visuales ──────────────────────────────────────────────────────
-const COVER_GRADIENTS: Record<string,string> = {
-  Pollería:"from-amber-400 via-orange-300 to-yellow-200",
-  Menú:    "from-green-500 via-emerald-400 to-teal-200",
-  Pizza:   "from-red-500 via-rose-400 to-orange-200",
-  Jugos:   "from-cyan-500 via-sky-400 to-blue-200",
-  Burger:  "from-yellow-500 via-amber-400 to-lime-200",
-  Sushi:   "from-pink-500 via-fuchsia-400 to-purple-200",
-};
-const COVER_EMOJI: Record<string,string> = {
-  Pollería:"🍗", Menú:"🍲", Pizza:"🍕", Jugos:"🥤", Burger:"🍔", Sushi:"🍣",
-};
-const CATEGORIAS = [
-  { label:"Todos", emoji:"✦" }, { label:"Pollería", emoji:"🍗" },
-  { label:"Menú",  emoji:"🍲" }, { label:"Pizza",    emoji:"🍕" },
-  { label:"Jugos", emoji:"🥤" },
-];
-const NUMERO_MOTORIZADO = "51987654321";
-const WHATSAPP_DELIVERY_URL = `https://wa.me/${NUMERO_MOTORIZADO}?text=${encodeURIComponent(
-  "Hola, necesito un delivery en Chachapoyas. Quiero coordinar un recojo y entrega."
+const NUMERO_WHATSAPP = "51987654321";
+const WHATSAPP_URL = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(
+  "Hola, deseo solicitar un servicio de delivery en Chachapoyas."
 )}`;
-type TipoIconoServicio = "comida" | "compras" | "medicinas" | "paquetes" | "encomiendas" | "negocios";
 
-interface ServicioDelivery {
-  icono: TipoIconoServicio;
-  titulo: string;
-  descripcion: string;
-  detalle: string;
-  estilo: string;
-}
-
-const SERVICIOS_DELIVERY: ServicioDelivery[] = [
+const SERVICIOS: Servicio[] = [
   {
-    icono: "comida",
-    titulo: "Delivery de comida",
-    descripcion: "Recogemos tu pedido favorito y lo llevamos caliente hasta tu puerta.",
-    detalle: "un delivery de comida",
-    estilo: "bg-orange-50 text-orange-600 ring-orange-100",
-  },
-  {
-    icono: "compras",
+    id: "compras",
     titulo: "Compras por encargo",
-    descripcion: "Compramos lo que necesitas y te evitamos vueltas y filas.",
-    detalle: "una compra por encargo",
-    estilo: "bg-violet-50 text-violet-600 ring-violet-100",
-  },
-  {
-    icono: "medicinas",
-    titulo: "Entrega de medicamentos",
-    descripcion: "Recojo rápido en boticas y entrega cuidadosa a domicilio.",
-    detalle: "la entrega de medicamentos",
+    descripcion: "Compramos por ti y entregamos donde nos indiques.",
+    etiqueta: "Compra asistida",
     estilo: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+    preguntas: [
+      "¿Qué producto necesitas comprar?",
+      "¿En qué tienda o zona debemos recogerlo?",
+      "¿A qué dirección debemos entregarlo?",
+      "¿Tienes alguna referencia?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
   },
   {
-    icono: "paquetes",
+    id: "medicinas",
+    titulo: "Entrega de medicamentos",
+    descripcion: "Recojo cuidadoso en boticas y entrega a domicilio.",
+    etiqueta: "Entrega prioritaria",
+    estilo: "bg-blue-50 text-blue-600 ring-blue-100",
+    preguntas: [
+      "¿Qué medicamento o producto necesitas?",
+      "¿En qué farmacia debemos recogerlo?",
+      "¿Cuál es la dirección de entrega?",
+      "¿Tienes una referencia del domicilio?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
+  },
+  {
+    id: "paquetes",
     titulo: "Recojo de paquetes",
-    descripcion: "Vamos por tu paquete y lo entregamos en el punto indicado.",
-    detalle: "el recojo de un paquete",
-    estilo: "bg-sky-50 text-sky-600 ring-sky-100",
+    descripcion: "Trasladamos paquetes pequeños de forma segura.",
+    etiqueta: "Recojo seguro",
+    estilo: "bg-violet-50 text-violet-600 ring-violet-100",
+    preguntas: [
+      "¿Dónde debemos recoger el paquete?",
+      "¿A qué dirección debemos entregarlo?",
+      "¿Qué tipo de paquete enviaremos?",
+      "¿Tienes referencias para el recojo o la entrega?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
   },
   {
-    icono: "encomiendas",
+    id: "documentos",
+    titulo: "Recojo de documentos",
+    descripcion: "Documentos importantes entregados con cuidado.",
+    etiqueta: "Manejo cuidadoso",
+    estilo: "bg-rose-50 text-rose-600 ring-rose-100",
+    preguntas: [
+      "¿Dónde debemos recoger los documentos?",
+      "¿A qué dirección debemos entregarlos?",
+      "¿Quién nos entregará los documentos?",
+      "¿Quién debe recibirlos?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
+  },
+  {
+    id: "encomiendas",
     titulo: "Encomiendas locales",
-    descripcion: "Traslados confiables y coordinados dentro de Chachapoyas.",
-    detalle: "una encomienda local",
-    estilo: "bg-amber-50 text-amber-600 ring-amber-100",
+    descripcion: "Envíos coordinados dentro de Chachapoyas.",
+    etiqueta: "Cobertura local",
+    estilo: "bg-cyan-50 text-cyan-600 ring-cyan-100",
+    preguntas: [
+      "¿Dónde debemos recoger la encomienda?",
+      "¿Cuál es el destino de la entrega?",
+      "¿Qué deseas enviar?",
+      "¿Tienes referencias para ambos puntos?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
   },
   {
-    icono: "negocios",
-    titulo: "Delivery para negocios",
-    descripcion: "Un aliado flexible para las entregas diarias de tu negocio.",
-    detalle: "delivery para mi negocio",
-    estilo: "bg-slate-100 text-slate-700 ring-slate-200",
+    id: "express",
+    titulo: "Delivery Express",
+    descripcion: "Atención prioritaria para entregas que no pueden esperar.",
+    etiqueta: "Prioridad alta",
+    estilo: "bg-amber-50 text-amber-600 ring-amber-100",
+    preguntas: [
+      "¿Dónde debemos recoger?",
+      "¿Dónde debemos entregar?",
+      "¿Qué deseas enviar?",
+      "¿Tienes alguna referencia importante?",
+      "¿Cuál será tu método de pago?",
+      "¿Cuál es tu número de contacto?",
+    ],
   },
 ];
 
-// ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomePage() {
-  const [vistaActual, setVistaActual]             = useState<Vista>("inicio");
-  const [restauranteActivo, setRestauranteActivo] = useState<Restaurante | null>(null);
-  const [categoriaActiva, setCategoriaActiva]     = useState("Todos");
-  const [busqueda, setBusqueda]                   = useState("");
-  const { carrito, totalItems, subtotal, agregar, incrementar, decrementar } = useCarrito();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
+  const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
+  const [sesion, setSesion] = useState(0);
 
-  const irAMenu    = (r: Restaurante) => { setRestauranteActivo(r); setVistaActual("menu"); };
-  const irAInicio  = () => { setRestauranteActivo(null); setVistaActual("inicio"); };
-  const irACarrito = () => setVistaActual("carrito");
+  const seleccionarServicio = (servicio:Servicio) => {
+    setServicioSeleccionado(servicio);
+    setSesion(valor => valor + 1);
+    setAsistenteAbierto(true);
+  };
 
-  const slide = (v: Vista) =>
-    vistaActual === v
-      ? "opacity-100 translate-x-0 pointer-events-auto"
-      : vistaActual === "inicio" && v !== "inicio"
-      ? "opacity-0 translate-x-full pointer-events-none"
-      : "opacity-0 -translate-x-full pointer-events-none";
+  const abrirAsistente = () => {
+    setServicioSeleccionado(null);
+    setSesion(valor => valor + 1);
+    setAsistenteAbierto(true);
+  };
+
+  const irA = (id:string) => {
+    setMenuAbierto(false);
+    document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 overflow-hidden">
-      <div className="flex-1 relative">
-        {/* Vista Inicio */}
-        <div className={`absolute inset-0 transition-all duration-300 ease-in-out ${slide("inicio")}`}>
-          <VistaInicio
-            categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva}
-            busqueda={busqueda} setBusqueda={setBusqueda}
-            onSeleccionarRestaurante={irAMenu}
-          />
-        </div>
-        {/* Vista Menú */}
-        <div className={`absolute inset-0 transition-all duration-300 ease-in-out ${slide("menu")}`}>
-          {restauranteActivo && (
-            <VistaMenu
-              restaurante={restauranteActivo} onVolver={irAInicio}
-              agregar={agregar} incrementar={incrementar} decrementar={decrementar} carrito={carrito}
-            />
-          )}
-        </div>
-        {/* Vista Carrito */}
-        <div className={`absolute inset-0 transition-all duration-300 ease-in-out ${slide("carrito")}`}>
-          <VistaCarrito onVolver={irAInicio} totalItems={totalItems} subtotal={subtotal} />
-        </div>
-      </div>
+    <div className="min-h-screen overflow-x-hidden bg-[#f7f9fc] text-slate-950">
+      <Header onMenu={() => setMenuAbierto(true)} onServicios={() => irA("servicios")} onAsistente={abrirAsistente} />
 
-      <NavbarInferior
-        vistaActual={vistaActual} totalItems={totalItems} subtotal={subtotal}
-        onInicio={irAInicio} onCarrito={irACarrito}
+      <main>
+        <Hero onSolicitar={abrirAsistente} onServicios={() => irA("servicios")} />
+        <Metricas />
+        <Servicios onSeleccionar={seleccionarServicio} />
+        <Confianza onSolicitar={abrirAsistente} />
+      </main>
+
+      <Footer onServicios={() => irA("servicios")} onAsistente={abrirAsistente} />
+
+      <MenuMovil abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} onIr={irA} onAsistente={abrirAsistente} />
+      <AsistenteDelivery
+        abierto={asistenteAbierto}
+        servicio={servicioSeleccionado}
+        sesion={sesion}
+        onCerrar={() => setAsistenteAbierto(false)}
+        onAbrir={abrirAsistente}
+        onSeleccionar={seleccionarServicio}
       />
     </div>
   );
 }
 
-// ─── Vista: INICIO ────────────────────────────────────────────────────────────
-function VistaInicio({ categoriaActiva, setCategoriaActiva, busqueda, setBusqueda, onSeleccionarRestaurante }:{
-  categoriaActiva:string; setCategoriaActiva:(c:string)=>void;
-  busqueda:string; setBusqueda:(v:string)=>void;
-  onSeleccionarRestaurante:(r:Restaurante)=>void;
-}) {
-  const filtrados = useMemo(() =>
-    RESTAURANTES_MOCK.filter(r => {
-      if (!r.activo) return false;
-      return (categoriaActiva==="Todos"||r.categoria===categoriaActiva) &&
-             (busqueda===""||r.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-    }), [categoriaActiva, busqueda]);
-
+function Header({onMenu,onServicios,onAsistente}:{onMenu:()=>void;onServicios:()=>void;onAsistente:()=>void}) {
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-24">
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-5 py-3.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Delivery activo · Chachapoyas</p>
-            </div>
-            <p className="text-xl font-black text-slate-900 tracking-tight leading-none">
-              Chacha<span className="text-orange-600">Fast</span>
-            </p>
-          </div>
-          <a href={WHATSAPP_DELIVERY_URL} target="_blank" rel="noreferrer"
-            className="bg-emerald-500 text-white text-[11px] font-extrabold px-3.5 py-2 rounded-full shadow-md shadow-emerald-100 flex items-center gap-1.5">
-            <span>WhatsApp</span><span aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </header>
-
-      <main className="flex-1 px-4 pt-4">
-        <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#0b1220] px-5 pt-6 pb-5 text-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.65)]">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0b1220] to-[#121b2d]" aria-hidden="true" />
-          <div className="absolute -top-24 -right-20 h-64 w-64 rounded-full bg-orange-500/20 blur-3xl" aria-hidden="true" />
-          <div className="absolute top-52 -left-24 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" aria-hidden="true" />
-          <svg className="absolute inset-x-0 bottom-20 h-52 w-full text-white/[0.08]" viewBox="0 0 390 210" fill="none" aria-hidden="true">
-            <path d="M-18 172C45 171 31 101 92 98C151 95 126 161 198 150C262 140 231 56 306 54C348 53 369 76 410 25" stroke="currentColor" strokeWidth="2" strokeDasharray="7 8" />
-            <circle cx="92" cy="98" r="5" fill="currentColor" />
-            <circle cx="306" cy="54" r="5" fill="currentColor" />
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#061329]/95 px-4 py-3 text-white shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[430px] items-center gap-3">
+        <button onClick={onMenu} type="button" aria-label="Abrir navegación" className="tap-target -ml-1 rounded-xl text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeWidth={2.2} d="M4 7h16M4 12h16M4 17h16" />
           </svg>
+        </button>
+        <button type="button" onClick={() => window.scrollTo({top:0,behavior:"smooth"})} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 text-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.15)]">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z" /></svg>
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-xl font-black leading-none tracking-tight">Chacha<span className="text-amber-400">Fast</span></span>
+            <span className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Delivery activo</span>
+          </span>
+        </button>
+        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="Contactar por WhatsApp" className="flex min-h-11 items-center gap-2 rounded-full bg-emerald-500 px-3.5 text-xs font-black shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-400 active:scale-95">
+          <IconoWhatsApp className="h-4 w-4" />
+          <span className="hidden min-[370px]:inline">WhatsApp</span>
+        </a>
+      </div>
+      <nav className="sr-only" aria-label="Navegación principal">
+        <button onClick={onServicios}>Servicios</button><button onClick={onAsistente}>Asistente</button>
+      </nav>
+    </header>
+  );
+}
 
-          <div className="relative z-10">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-200 backdrop-blur-sm">
-                <span className="relative flex h-2 w-2" aria-hidden="true">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                </span>
-                Servicio activo
-              </span>
-              <span className="text-[10px] font-bold text-slate-400">Chachapoyas · Amazonas</span>
-            </div>
+function Hero({onSolicitar,onServicios}:{onSolicitar:()=>void;onServicios:()=>void}) {
+  return (
+    <section id="inicio" className="px-3 pt-3">
+      <div className="relative min-h-[720px] overflow-hidden rounded-[2rem] bg-[#061329] text-white shadow-[0_30px_80px_-32px_rgba(2,12,32,0.75)]">
+        <Image src="/images/delivery-rider-chachapoyas.webp" alt="Repartidor local de ChachaFast en Chachapoyas" fill priority sizes="(max-width: 430px) 100vw, 430px" className="hero-drift object-cover object-[62%_center]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#061329]/95 via-[#061329]/72 to-[#061329]/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#061329]/85 via-[#061329]/20 to-transparent" />
+        <div className="absolute -left-16 top-32 h-56 w-56 rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
 
-            <h1 className="mt-5 text-[2rem] min-[360px]:text-[2.35rem] font-black leading-[0.98] tracking-[-0.04em] text-white">
-              Delivery rápido<br/>en <span className="text-orange-400">Chachapoyas</span>
-            </h1>
-            <p className="mt-4 max-w-[335px] text-[13px] font-medium leading-relaxed text-slate-300">
-              Recojos, compras por encargo, medicamentos y encomiendas locales con atención directa por WhatsApp.
-            </p>
-
-            <div className="mt-5 flex flex-col gap-2.5">
-              <a href={WHATSAPP_DELIVERY_URL} target="_blank" rel="noreferrer"
-                className="flex min-h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_-10px_rgba(16,185,129,0.75)] transition-all hover:bg-emerald-400 active:scale-[0.98]">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.06 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z" />
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.12 1.53 5.85L.06 23.57a.5.5 0 0 0 .61.64l5.92-1.55A11.95 11.95 0 0 0 12 24c6.63 0 12-5.37 12-12S18.63 0 12 0zm0 21.82a9.8 9.8 0 0 1-5.03-1.38l-.36-.21-3.72.97.99-3.62-.23-.38A9.79 9.79 0 0 1 2.18 12 9.82 9.82 0 1 1 12 21.82z" />
-                </svg>
-                Solicitar delivery por WhatsApp
-              </a>
-              <button type="button"
-                onClick={() => document.querySelector("main section:nth-of-type(2)")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm font-extrabold text-white backdrop-blur-sm transition-all hover:bg-white/10 active:scale-[0.98]">
-                Ver servicios
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="relative mt-6 h-44" aria-label="Beneficios del servicio">
-              <div className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-orange-300/20 bg-orange-500/10 shadow-[0_0_50px_rgba(249,115,22,0.18)]">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-xl shadow-orange-950/30">
-                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 15h11m-8-3h8m-5-3h5m2.5 9.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Zm-13 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7.5 18.5h9M14 9h2.5l2 4H21l1 3h-6l-2-7Z" />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="absolute left-0 top-1 rounded-2xl border border-white/10 bg-white/[0.09] px-3 py-2.5 shadow-xl backdrop-blur-md">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Tarifa local</p>
-                <p className="mt-0.5 text-sm font-black text-white">Desde S/ 3.00</p>
-              </div>
-              <div className="absolute right-0 top-8 rounded-2xl border border-white/10 bg-white/[0.09] px-3 py-2.5 shadow-xl backdrop-blur-md">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Canal directo</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-black text-white"><span className="h-2 w-2 rounded-full bg-emerald-400" /> WhatsApp</p>
-              </div>
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-2xl border border-white/10 bg-white/[0.09] px-3.5 py-2.5 shadow-xl backdrop-blur-md">
-                <p className="flex items-center gap-2 text-xs font-black text-white"><span aria-hidden="true">⚡</span> Entrega rápida</p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border-t border-white/10 pt-4 text-[10px] font-bold text-slate-400">
-              <span className="text-emerald-400" aria-hidden="true">✓</span><span>Precio accesible</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400" aria-hidden="true">✓</span><span>Cobertura local</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400" aria-hidden="true">✓</span><span>Atención real</span>
-            </div>
+        <div className="relative z-10 px-6 pb-52 pt-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-slate-950/35 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-300 backdrop-blur-md">
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z" /></svg>
+            Delivery activo en Chachapoyas
           </div>
-        </section>
-
-        <section className="relative mt-7 scroll-mt-20 overflow-hidden rounded-[2rem] border border-slate-100 bg-gradient-to-b from-slate-50 to-white px-4 py-6 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.4)]">
-          <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-orange-100/70 blur-3xl" aria-hidden="true" />
-          <div className="relative">
-            <div className="max-w-[330px]">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-px w-6 bg-orange-500" aria-hidden="true" />
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-600">Soluciones locales</p>
-              </div>
-              <h2 className="text-2xl font-black leading-tight tracking-tight text-slate-950">Nuestros servicios</h2>
-              <p className="mt-2 text-xs font-medium leading-relaxed text-slate-500">
-                Resolvemos tus entregas del día con atención directa, tarifas claras y cobertura en Chachapoyas.
-              </p>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-3 min-[340px]:grid-cols-2">
-              {SERVICIOS_DELIVERY.map(servicio => (
-                <TarjetaServicio key={servicio.titulo} servicio={servicio} />
-              ))}
-            </div>
-
-            <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-3 py-3 text-center">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600" aria-hidden="true">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
-              <p className="text-[11px] font-bold text-slate-600">Coordinación personalizada para cada entrega</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-7">
-          <div className="flex items-end justify-between mb-3">
-            <div>
-              <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">También entregamos tus antojos</p>
-              <h2 className="text-xl font-black text-slate-900 mt-0.5">Negocios locales</h2>
-            </div>
-            <span className="text-[10px] text-slate-400 font-semibold">Entrega desde S/. 2</span>
-          </div>
-          <div className="relative mb-3">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="search" placeholder="Buscar negocio o comida..." value={busqueda}
-              onChange={e=>setBusqueda(e.target.value)} aria-label="Buscar negocio local"
-              className="w-full bg-slate-100 rounded-full pl-10 pr-10 py-3 text-sm text-slate-900 placeholder-slate-400 border border-transparent shadow-sm focus:outline-none focus:border-orange-500 focus:bg-white transition-all duration-200"/>
-            {busqueda && <button onClick={()=>setBusqueda("")} aria-label="Limpiar" className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>}
-          </div>
-        <div className="overflow-x-auto scrollbar-none py-2.5 flex gap-2">
-          {CATEGORIAS.map(({label,emoji})=>(
-            <button key={label} onClick={()=>setCategoriaActiva(label)} aria-pressed={categoriaActiva===label}
-              className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 whitespace-nowrap ${categoriaActiva===label?"bg-slate-900 text-white shadow-lg scale-105":"bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
-              <span>{emoji}</span><span>{label}</span>
+          <h1 className="mt-6 max-w-[340px] text-[2.7rem] font-black leading-[0.98] tracking-[-0.045em] min-[390px]:text-[3rem]">
+            Tu delivery<br/><span className="text-amber-400">rápido y seguro</span>
+          </h1>
+          <p className="mt-5 max-w-[315px] text-[15px] font-semibold leading-relaxed text-slate-200">
+            Recojos, compras por encargo, medicamentos y encomiendas. Estamos cerca para ayudarte en minutos.
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <button onClick={onSolicitar} type="button" className="flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 px-5 text-sm font-black shadow-[0_16px_35px_-14px_rgba(16,185,129,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 active:scale-[0.98]">
+              <IconoWhatsApp className="h-5 w-5" /> Solicitar Delivery
             </button>
+            <button onClick={onServicios} type="button" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-slate-950/30 px-5 text-sm font-black backdrop-blur-md transition-all duration-300 hover:bg-white/10 active:scale-[0.98]">
+              Ver servicios
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m6 9 6 6 6-6" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="absolute inset-x-3 bottom-3 z-10 grid grid-cols-3 gap-2">
+          {[
+            {icono:"rayo",titulo:"Entrega rápida",detalle:"en minutos"},
+            {icono:"ubicacion",titulo:"Cobertura local",detalle:"en la ciudad"},
+            {icono:"escudo",titulo:"Atención real",detalle:"y confiable"},
+          ].map(item => (
+            <div key={item.titulo} className="rounded-2xl border border-white/15 bg-[#0c2747]/80 px-2 py-3 text-center shadow-xl backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1">
+              <span className="mx-auto flex h-8 w-8 items-center justify-center text-amber-400"><IconoBeneficio tipo={item.icono} /></span>
+              <p className="mt-1 text-[10px] font-black leading-tight">{item.titulo}</p>
+              <p className="mt-0.5 text-[9px] font-semibold text-slate-300">{item.detalle}</p>
+            </div>
           ))}
         </div>
-        {filtrados.length>0 && (
-          <div className="flex items-center justify-between my-4">
-            <h3 className="text-sm font-extrabold text-slate-700">{categoriaActiva==="Todos"?"Opciones con delivery":categoriaActiva}</h3>
-            <span className="text-xs text-slate-400 font-medium bg-white border border-slate-200 px-2.5 py-1 rounded-full shadow-sm">{filtrados.length} aliados</span>
-          </div>
-        )}
-        {filtrados.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-4 text-4xl">🔍</div>
-            <p className="font-extrabold text-slate-900 text-base">No encontramos esa opción</p>
-            <p className="text-slate-400 text-xs mt-1">Podemos buscarla por encargo para ti.</p>
-            <a href={WHATSAPP_DELIVERY_URL} target="_blank" rel="noreferrer" className="mt-5 bg-emerald-500 text-white text-sm font-bold px-6 py-2.5 rounded-full">Pedir por WhatsApp</a>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {filtrados.map((r,i)=><TarjetaBento key={r.id} restaurante={r} index={i} onClick={()=>onSeleccionarRestaurante(r)}/>)}
-          </div>
-        )}
-        </section>
-        <div className="mt-6 mb-4 relative overflow-hidden rounded-3xl bg-orange-600 p-5 text-white">
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-orange-600/20" aria-hidden="true"/>
-          <div className="absolute -bottom-10 -left-5 w-28 h-28 rounded-full bg-orange-600/10" aria-hidden="true"/>
-          <div className="relative">
-            <span className="bg-white/15 text-white text-[10px] font-black px-2.5 py-1 rounded-full">DELIVERY A TU MEDIDA</span>
-            <p className="font-black text-xl leading-tight mt-2">¿No está en la lista?<br/><span className="text-orange-100">Lo buscamos por ti.</span></p>
-            <p className="text-orange-100 text-xs mt-2">Cuéntanos qué necesitas y coordinamos recojo, compra y entrega por WhatsApp.</p>
-            <a href={WHATSAPP_DELIVERY_URL} target="_blank" rel="noreferrer" className="inline-flex mt-4 bg-white text-orange-700 font-extrabold text-xs px-4 py-2.5 rounded-full">Coordinar un encargo →</a>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </section>
   );
 }
 
-function TarjetaServicio({servicio}:{servicio:ServicioDelivery}) {
-  const enlace = `https://wa.me/${NUMERO_MOTORIZADO}?text=${encodeURIComponent(
-    `Hola, necesito coordinar ${servicio.detalle} en Chachapoyas.`
-  )}`;
-
+function Metricas() {
+  const items = [
+    {icono:"moto",eyebrow:"Desde",valor:"S/ 3.00",detalle:"Precio accesible",color:"text-amber-500"},
+    {icono:"whatsapp",eyebrow:"Atención por",valor:"WhatsApp",detalle:"Respuesta directa",color:"text-emerald-500"},
+    {icono:"reloj",eyebrow:"Entrega en",valor:"45 min*",detalle:"Tiempo estimado",color:"text-amber-500"},
+  ];
   return (
-    <a href={enlace} target="_blank" rel="noreferrer"
-      aria-label={`Solicitar ${servicio.titulo} por WhatsApp`}
-      className="group relative flex min-h-[178px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.5)] transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_16px_30px_-16px_rgba(249,115,22,0.28)] active:scale-[0.98]">
-      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-orange-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 transition-transform duration-300 group-hover:scale-105 ${servicio.estilo}`}>
-          <IconoServicio tipo={servicio.icono} />
-        </div>
-        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-100 text-slate-300 transition-all duration-300 group-hover:border-orange-100 group-hover:bg-orange-50 group-hover:text-orange-600" aria-hidden="true">
-          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.3} d="M5 12h14m-6-6 6 6-6 6" />
-          </svg>
-        </span>
+    <section aria-label="Datos del servicio" className="mx-4 -mt-1 rounded-[1.75rem] bg-[#07172e] px-3 py-5 text-white shadow-[0_20px_45px_-24px_rgba(2,12,32,0.8)]">
+      <div className="grid grid-cols-3 divide-x divide-white/10">
+        {items.map(item => (
+          <div key={item.valor} className="px-2 text-center">
+            <span className={`mx-auto flex h-9 w-9 items-center justify-center ${item.color}`}><IconoMetrica tipo={item.icono}/></span>
+            <p className="mt-1 text-[8px] font-bold uppercase tracking-wide text-slate-400">{item.eyebrow}</p>
+            <p className="mt-0.5 text-sm font-black leading-tight min-[390px]:text-base">{item.valor}</p>
+            <p className="mt-1 text-[9px] font-medium text-slate-400">{item.detalle}</p>
+          </div>
+        ))}
       </div>
-      <h3 className="relative mt-4 text-sm font-black leading-tight text-slate-900">{servicio.titulo}</h3>
-      <p className="relative mt-1.5 flex-1 text-[11px] font-medium leading-relaxed text-slate-500">{servicio.descripcion}</p>
-      <span className="relative mt-3 text-[10px] font-extrabold text-orange-600 opacity-80 transition-opacity group-hover:opacity-100">Coordinar por WhatsApp</span>
-    </a>
+      <p className="mt-4 text-center text-[9px] font-medium text-slate-500">*Tiempo referencial según zona, disponibilidad y tráfico.</p>
+    </section>
   );
 }
 
-function IconoServicio({tipo}:{tipo:TipoIconoServicio}) {
-  const className = "h-5 w-5";
-
-  if (tipo === "comida") return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M4 15h16M6.5 15a5.5 5.5 0 0 1 11 0M3 18h18M12 7.5V6" />
-    </svg>
-  );
-  if (tipo === "compras") return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M5 8h14l-1 12H6L5 8Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M9 10V6a3 3 0 0 1 6 0v4" />
-    </svg>
-  );
-  if (tipo === "medicinas") return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="m8 16 8-8a3.54 3.54 0 1 1 5 5l-8 8a3.54 3.54 0 0 1-5-5Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="m12 12 5 5M5 4v6M2 7h6" />
-    </svg>
-  );
-  if (tipo === "paquetes") return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="m4 7 8-4 8 4-8 4-8-4Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M4 7v10l8 4 8-4V7M12 11v10" />
-    </svg>
-  );
-  if (tipo === "encomiendas") return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M3 6h11v11H3V6Zm11 4h4l3 3v4h-7v-7Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-    </svg>
-  );
+function Servicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M4 10v10h16V10M3 10l2-6h14l2 6" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M8 20v-6h5v6M3 10a3 3 0 0 0 5 2 3 3 0 0 0 4 0 3 3 0 0 0 4 0 3 3 0 0 0 5-2" />
-    </svg>
+    <section id="servicios" className="scroll-mt-20 px-4 py-14">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">Logística a tu medida</p>
+          <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-[#07172e]">Nuestros servicios</h2>
+        </div>
+        <span className="mb-1 text-[10px] font-extrabold text-slate-400">6 soluciones</span>
+      </div>
+      <p className="mt-3 max-w-[350px] text-sm font-medium leading-relaxed text-slate-500">Elige una operación y nuestro asistente coordinará contigo cada detalle.</p>
+
+      <div className="mt-7 grid grid-cols-1 gap-3 min-[340px]:grid-cols-2">
+        {SERVICIOS.map(servicio => <TarjetaServicio key={servicio.id} servicio={servicio} onSeleccionar={onSeleccionar}/>) }
+      </div>
+    </section>
   );
 }
 
-// ─── Tarjeta Bento ────────────────────────────────────────────────────────────
-function TarjetaBento({restaurante,index,onClick}:{restaurante:Restaurante;index:number;onClick:()=>void}) {
-  const gradient = COVER_GRADIENTS[restaurante.categoria]??"from-slate-400 to-slate-200";
-  const emoji    = COVER_EMOJI[restaurante.categoria]??"🍽️";
-  const h        = index%3===0?"h-44":"h-36";
+function TarjetaServicio({servicio,onSeleccionar}:{servicio:Servicio;onSeleccionar:(servicio:Servicio)=>void}) {
   return (
-    <button onClick={onClick} aria-label={`Pedir delivery de ${restaurante.nombre}`}
-      className="block w-full text-left rounded-3xl bg-white overflow-hidden shadow-md border border-slate-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]">
-      <div className={`relative w-full ${h} bg-gradient-to-br ${gradient} overflow-hidden`}>
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="text-[96px] leading-none opacity-25 blur-[3px] -rotate-12 scale-125">{emoji}</span>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="text-7xl leading-none drop-shadow-lg">{emoji}</span>
-        </div>
-        <div className="absolute top-3 left-3">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-white/90 shadow-lg ring-2 ring-white">
-            <Image src={restaurante.logo_url} alt={`Logo ${restaurante.nombre}`} width={48} height={48} className="object-cover w-full h-full"/>
-          </div>
-        </div>
-        <div className="absolute top-3 right-3">
-          <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full">{restaurante.categoria}</span>
-        </div>
-      </div>
-      <div className="px-4 pt-3 pb-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-extrabold text-lg text-slate-900 leading-tight truncate">{restaurante.nombre}</h3>
-            <p className="text-slate-500 text-sm mt-0.5 line-clamp-1">{restaurante.descripcion}</p>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-3">
-          <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">● Delivery disponible</span>
-          <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-2.5 py-1 rounded-full">🛵 Recojo + entrega</span>
-        </div>
-      </div>
+    <button type="button" onClick={() => onSeleccionar(servicio)} aria-label={`Solicitar ${servicio.titulo}`}
+      className="group relative min-h-[210px] overflow-hidden rounded-[1.6rem] border border-slate-100 bg-white p-5 text-left shadow-[0_14px_35px_-26px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_20px_42px_-24px_rgba(245,158,11,0.38)] active:scale-[0.97]">
+      <span className="absolute right-0 top-0 h-20 w-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-amber-50 opacity-0 transition-all duration-300 group-hover:scale-150 group-hover:opacity-100" aria-hidden="true" />
+      <span className={`relative flex h-14 w-14 items-center justify-center rounded-2xl ring-1 transition-transform duration-300 group-hover:scale-105 ${servicio.estilo}`}>
+        <IconoServicio tipo={servicio.id}/>
+      </span>
+      <p className="relative mt-4 text-[9px] font-black uppercase tracking-[0.11em] text-slate-400">{servicio.etiqueta}</p>
+      <h3 className="relative mt-1.5 text-[15px] font-black leading-tight text-[#07172e]">{servicio.titulo}</h3>
+      <p className="relative mt-2 text-[11px] font-medium leading-relaxed text-slate-500">{servicio.descripcion}</p>
+      <span className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-amber-400 group-hover:text-slate-950">
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.3} d="m9 5 7 7-7 7" /></svg>
+      </span>
     </button>
   );
 }
 
-// ─── Vista: MENÚ ──────────────────────────────────────────────────────────────
-function VistaMenu({restaurante,onVolver,agregar,incrementar,decrementar,carrito}:{
-  restaurante:Restaurante; onVolver:()=>void;
-  agregar:(p:Producto,rid:string,rn:string,rtwa:string,rqr:string)=>void;
-  incrementar:(id:string)=>void; decrementar:(id:string)=>void;
-  carrito:{items:{producto:Producto;cantidad:number}[];restaurante_id:string|null};
-}) {
-  const gradient= COVER_GRADIENTS[restaurante.categoria]??"from-slate-400 to-slate-200";
-  const emoji   = COVER_EMOJI[restaurante.categoria]??"🍽️";
-
-  const porCategoria = useMemo(()=>{
-    const m = new Map<string,Producto[]>();
-    const platos = PLATOS_MOCK[restaurante.id]??[];
-    platos.forEach(p=>m.set(p.categoria,[...(m.get(p.categoria)??[]),p]));
-    return m;
-  },[restaurante.id]);
-
-  const getCant = (id:string) => carrito.items.find(i=>i.producto.id===id)?.cantidad??0;
-
+function Confianza({onSolicitar}:{onSolicitar:()=>void}) {
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-24">
-      {/* Cover */}
-      <div className={`relative w-full h-40 bg-gradient-to-br ${gradient} overflow-hidden shrink-0`}>
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="text-[96px] leading-none opacity-25 blur-[3px] -rotate-12 scale-125">{emoji}</span>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="text-7xl leading-none drop-shadow-lg">{emoji}</span>
-        </div>
-        <button onClick={onVolver} aria-label="Volver"
-          className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-      </div>
-      {/* Header restaurante */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 ring-2 ring-slate-200 shrink-0">
-          <Image src={restaurante.logo_url} alt={restaurante.nombre} width={48} height={48} className="object-cover"/>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-extrabold text-slate-900 text-base leading-tight truncate">{restaurante.nombre}</h2>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">● Abierto</span>
-            <span className="text-slate-400 text-[10px]">{restaurante.categoria}</span>
-          </div>
-        </div>
-      </div>
-      {/* Platos */}
-      <main className="flex-1 px-4 pt-4">
-        {Array.from(porCategoria.entries()).map(([cat,ps])=>(
-          <section key={cat} className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1 bg-slate-100"/><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span><div className="h-px flex-1 bg-slate-100"/>
-            </div>
-            <div className="flex flex-col gap-3">
-              {ps.map(p=>{
-                const c=getCant(p.id);
-                return (
-                  <div key={p.id} className={`flex items-center gap-3 bg-white rounded-2xl p-3 border transition-all duration-200 ${c>0?"border-orange-200 shadow-md shadow-orange-50":"border-slate-100 shadow-sm"} ${!p.disponible?"opacity-50":""}`}>
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-3xl shrink-0">{emoji}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 text-sm leading-snug">{p.nombre}</p>
-                      <p className="text-slate-400 text-xs mt-0.5 line-clamp-1">{p.descripcion}</p>
-                      <p className={`font-extrabold text-sm mt-1.5 ${c>0?"text-orange-600":"text-slate-800"}`}>S/. {p.precio.toFixed(2)}</p>
-                    </div>
-                    <div className="shrink-0">
-                      {!p.disponible?<span className="text-[10px] text-slate-400">Agotado</span>
-                      :c===0?<button onClick={()=>agregar(p,restaurante.id,restaurante.nombre,restaurante.telefono_wa,restaurante.qr_yape_url)} aria-label={`Agregar ${p.nombre}`} className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl px-3 py-2 text-xs font-bold transition-colors shadow-sm shadow-orange-200">+ Agregar</button>
-                      :<div className="flex items-center gap-1.5">
-                        <button onClick={()=>decrementar(p.id)} aria-label="Quitar uno" className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center">−</button>
-                        <span className="w-5 text-center font-extrabold text-orange-600 text-sm">{c}</span>
-                        <button onClick={()=>incrementar(p.id)} aria-label="Agregar uno más" className="w-8 h-8 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold flex items-center justify-center">+</button>
-                      </div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </main>
-    </div>
-  );
-}
-
-// ─── Vista: CARRITO (wrapper) ─────────────────────────────────────────────────
-function VistaCarrito({onVolver,totalItems,subtotal}:{onVolver:()=>void;totalItems:number;subtotal:number}) {
-  const { carrito } = useCarrito();
-  if (totalItems===0) return (
-    <div className="flex flex-col items-center justify-center h-full pb-24 text-center px-8">
-      <div className="w-24 h-24 rounded-3xl bg-orange-50 flex items-center justify-center mb-5 text-5xl">🛵</div>
-      <p className="font-extrabold text-slate-900 text-xl">Tu pedido está vacío</p>
-      <p className="text-slate-400 text-sm mt-1">Elige un negocio y nosotros hacemos la entrega</p>
-      <button onClick={onVolver} className="mt-6 bg-slate-900 text-white font-bold px-7 py-3 rounded-2xl text-sm">Explorar opciones</button>
-    </div>
-  );
-  return <ChatbotPedido onVolver={onVolver} totalItems={totalItems} subtotal={subtotal} carrito={carrito}/>;
-}
-// ─── Chatbot de pedido ────────────────────────────────────────────────────────
-function ChatbotPedido({onVolver,totalItems,subtotal,carrito}:{
-  onVolver:()=>void; totalItems:number; subtotal:number;
-  carrito:EstadoCarrito;
-}) {
-  const [paso,setPaso]               = useState<PasoChat>("nombre");
-  const [mensajes,setMensajes]       = useState<MensajeChat[]>([]);
-  const [input,setInput]             = useState("");
-  const [nombre,setNombre]           = useState("");
-  const [telefono,setTelefono]       = useState("");
-  const [direccion,setDireccion]     = useState("");
-  const [zonaId,setZonaId]           = useState("");
-  const [metodoPago,setMetodoPago]   = useState<MetodoPago|"">("");
-  const chatRef                      = useRef<HTMLDivElement>(null);
-
-  const zonaSeleccionada = ZONAS.find(z=>z.id===zonaId);
-  const costoEnvio       = zonaSeleccionada?.costo_envio??0;
-  const total            = subtotal+costoEnvio;
-
-  const uid = () => Math.random().toString(36).slice(2);
-
-  const botMsg = (texto:string):MensajeChat => ({id:uid(),tipo:"bot",texto});
-  const usrMsg = (texto:string):MensajeChat => ({id:uid(),tipo:"usuario",texto});
-
-  // Mensaje inicial
-  useEffect(()=>{
-    setMensajes([botMsg(`👋 ¡Hola! Soy tu coordinador de delivery de *ChachaFast*.\n\nTienes *${totalItems} producto${totalItems!==1?"s":""}* listo${totalItems!==1?"s":""} para recoger por S/. ${subtotal.toFixed(2)}.\n\n¿Cuál es tu *nombre completo*?`)]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  useEffect(()=>{
-    setTimeout(()=>chatRef.current?.scrollTo({top:chatRef.current.scrollHeight,behavior:"smooth"}),80);
-  },[mensajes]);
-
-  const agregarMensajes = (msgs:MensajeChat[]) => setMensajes(prev=>[...prev,...msgs]);
-
-  const enviarInput = () => {
-    const val = input.trim();
-    if (!val) return;
-    setInput("");
-
-    if (paso==="nombre") {
-      setNombre(val);
-      agregarMensajes([usrMsg(val), botMsg(`Perfecto, *${val}*! 📱\n\n¿Cuál es tu número de celular (WhatsApp)?`)]);
-      setPaso("direccion");
-    } else if (paso==="direccion") {
-      // primer campo en este paso es teléfono, luego dirección
-      if (!telefono) {
-        if (!/^\d{9}$/.test(val)) {
-          agregarMensajes([usrMsg(val), botMsg("⚠️ Ingresa un número válido de 9 dígitos.")]);
-          return;
-        }
-        setTelefono(val);
-        agregarMensajes([usrMsg(val), botMsg(`Genial! 📍\n\n¿Cuál es tu *dirección exacta* en Chachapoyas?\n_(Ej: Jr. Grau 123, frente al mercado)_`)]);
-      } else {
-        setDireccion(val);
-        const listaZonas = ZONAS.map(z=>`• ${z.nombre} — ${z.costo_envio===null?"A coordinar":`S/. ${z.costo_envio.toFixed(2)}`}`).join("\n");
-        agregarMensajes([usrMsg(val), botMsg(`Anotado! 🗺️\n\nEl costo de envío depende de tu zona. Selecciona la tuya:\n\n${listaZonas}`)]);
-        setPaso("zona");
-      }
-    }
-  };
-
-  const seleccionarZona = (z:Zona) => {
-    setZonaId(z.id);
-    const envioTexto = z.costo_envio===null?"a coordinar":`S/. ${z.costo_envio.toFixed(2)}`;
-    agregarMensajes([
-      usrMsg(z.nombre),
-      botMsg(`Zona *${z.nombre}* seleccionada. El envío es ${envioTexto}. 💳\n\n¿Cómo vas a pagar?`),
-    ]);
-    setPaso("pago");
-  };
-
-  const seleccionarPago = (m:MetodoPago) => {
-    setMetodoPago(m);
-    const texto = m==="efectivo"?"💵 Efectivo":"📱 Yape / Plin";
-    const resumen = carrito.items.map(i=>`• ${i.cantidad}x ${i.producto.nombre} — S/. ${(i.producto.precio*i.cantidad).toFixed(2)}`).join("\n");
-    agregarMensajes([
-      usrMsg(texto),
-      botMsg(`¡Todo listo! 🎉\n\n*Resumen de tu delivery:*\n${resumen}\n────────────\nEntrega: ${costoEnvio===0?"A coordinar":`S/. ${costoEnvio.toFixed(2)}`}\n*TOTAL: S/. ${total.toFixed(2)}*\n────────────\nPago: ${texto}\n\n¿Confirmas el recojo y la entrega? 🛵`),
-    ]);
-    setPaso("confirmacion");
-  };
-
-  const confirmarPedido = () => {
-    if (!zonaSeleccionada) return;
-    const pedidoId = `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const enlace = generarEnlaceWhatsApp({
-      pedidoId, clienteNombre:nombre, clienteTelefono:telefono,
-      direccion, zona:zonaSeleccionada,
-      items: carrito.items,
-      subtotal, costoEnvio, total, metodoPago:metodoPago as MetodoPago,
-      telefonoNegocio: carrito.restaurante_telefono_wa??NUMERO_MOTORIZADO,
-    });
-    window.open(enlace,"_blank");
-    agregarMensajes([botMsg("✅ *¡Delivery solicitado!*\n\nEn breve coordinaremos el recojo y recibirás la confirmación por WhatsApp. ¡Gracias por elegir ChachaFast! 🛵")]);
-    localStorage.setItem(`pedido_previo_${telefono}`,pedidoId);
-  };
-
-  return (
-    <div className="flex flex-col h-full bg-slate-50">
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={onVolver} aria-label="Volver" className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
-          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-lg shadow-md shadow-orange-200">🛵</div>
-        <div className="flex-1">
-          <p className="font-extrabold text-slate-900 text-sm leading-tight">Coordinador ChachaFast</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"/>
-            <p className="text-[10px] text-emerald-600 font-semibold">En línea</p>
-          </div>
-        </div>
-        <div className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-full">
-          {totalItems} ítem{totalItems!==1?"s":""}
-        </div>
-      </header>
-
-      {/* Área de mensajes — crece y hace scroll, con padding bottom para no quedar bajo el panel fijo */}
-      <div ref={chatRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-6">
-        {mensajes.map(m=>(
-          <div key={m.id} className={`flex gap-2 ${m.tipo==="usuario"?"justify-end":"justify-start"}`}>
-            {m.tipo==="bot" && (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-sm shrink-0 mt-0.5 shadow-sm">🛵</div>
-            )}
-            <div
-              className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm whitespace-pre-line
-                          ${m.tipo==="bot"
-                            ?"bg-white text-slate-800 rounded-tl-sm border border-slate-100"
-                            :"bg-orange-600 text-white rounded-tr-sm"}`}
-              dangerouslySetInnerHTML={{__html:m.texto.replace(/\*(.*?)\*/g,"<strong>$1</strong>").replace(/_(.*?)_/g,"<em>$1</em>")}}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* ── Panel de acción fijo — SIEMPRE visible encima de la navbar ── */}
-      <div className="shrink-0 bg-white border-t border-slate-100 px-4 pt-3 pb-24 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-
-        {/* Input de texto: pasos nombre y dirección */}
-        {(paso==="nombre" || paso==="direccion") && (
-          <div className="flex gap-2">
-            <input
-              type={paso==="direccion" && !telefono ? "tel" : "text"}
-              value={input}
-              onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>e.key==="Enter" && enviarInput()}
-              maxLength={paso==="direccion" && !telefono ? 9 : undefined}
-              placeholder={
-                paso==="nombre" ? "Tu nombre completo..."
-                : !telefono ? "Tu número de celular (9 dígitos)..."
-                : "Tu dirección exacta..."
-              }
-              className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-900 placeholder-slate-400 border border-transparent focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
-              aria-label="Respuesta al chatbot"
-            />
-            <button
-              onClick={enviarInput}
-              className="w-11 h-11 rounded-full bg-orange-600 text-white flex items-center justify-center hover:bg-orange-700 transition-colors shadow-md shadow-orange-200 shrink-0"
-              aria-label="Enviar respuesta"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Botones de zona */}
-        {paso==="zona" && (
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Selecciona tu zona</p>
-            {ZONAS.map(z=>(
-              <button
-                key={z.id}
-                onClick={()=>seleccionarZona(z)}
-                className="w-full text-left bg-slate-50 border border-slate-200 hover:border-orange-400 hover:bg-orange-50
-                           active:bg-orange-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700
-                           transition-all duration-150 flex items-center justify-between"
-              >
-                <span>📍 {z.nombre}</span>
-                <span className="text-orange-600 font-bold text-xs">
-                  {z.costo_envio===null ? "A coordinar" : `S/. ${z.costo_envio.toFixed(2)}`}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Botones de método de pago */}
-        {paso==="pago" && (
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">¿Cómo vas a pagar?</p>
-            <div className="flex gap-3">
-              {(["efectivo","yape"] as MetodoPago[]).map(m=>(
-                <button
-                  key={m}
-                  onClick={()=>seleccionarPago(m)}
-                  className="flex-1 bg-slate-50 border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50
-                             active:bg-orange-100 rounded-2xl px-3 py-4 flex flex-col items-center gap-2
-                             transition-all duration-150"
-                >
-                  <span className="text-3xl">{m==="efectivo"?"💵":"📱"}</span>
-                  <span className="text-sm font-bold text-slate-700">{m==="efectivo"?"Efectivo":"Yape / Plin"}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Botón confirmar pedido */}
-        {paso==="confirmacion" && (
-          <button
-            onClick={confirmarPedido}
-            className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white font-extrabold
-                       py-4 rounded-2xl text-sm shadow-lg shadow-emerald-200 flex items-center justify-center gap-2
-                       hover:from-emerald-600 hover:to-green-600 active:scale-[0.98] transition-all duration-200"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.852L.057 23.57a.5.5 0 00.616.635l5.92-1.55A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.803 9.803 0 01-5.028-1.382l-.36-.214-3.722.975.992-3.624-.234-.373A9.787 9.787 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
-            </svg>
-            Confirmar delivery por WhatsApp
+    <section id="confianza" className="px-4 pb-14">
+      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0c2b50] to-[#061329] px-5 py-7 text-white shadow-[0_24px_55px_-30px_rgba(2,12,32,0.8)]">
+        <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
+        <div className="relative">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-950/20"><IconoServicio tipo="express"/></span>
+          <h2 className="mt-5 text-2xl font-black tracking-tight">¿Listo para tu <span className="text-amber-400">delivery?</span></h2>
+          <p className="mt-2 max-w-[300px] text-sm font-medium leading-relaxed text-slate-300">Cuéntanos qué necesitas. Una persona real te ayudará a confirmar el recojo, la tarifa y la entrega.</p>
+          <button onClick={onSolicitar} type="button" className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 text-sm font-black shadow-lg shadow-emerald-950/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-400 active:scale-[0.98]">
+            <IconoWhatsApp className="h-5 w-5"/> Solicitar ahora
           </button>
-        )}
-
-        {/* Estado enviado — ya no hay acción pendiente */}
-        {paso==="nombre" || paso==="direccion" || paso==="zona" || paso==="pago" || paso==="confirmacion"
-          ? null
-          : <p className="text-center text-xs text-slate-400 py-2">Pedido procesado ✅</p>
-        }
+          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
+            <div className="flex items-center gap-2.5"><span className="text-amber-400"><IconoBeneficio tipo="escudo"/></span><p className="text-[11px] font-bold">Seguro y<br/>confiable</p></div>
+            <div className="flex items-center gap-2.5"><span className="text-amber-400"><IconoBeneficio tipo="soporte"/></span><p className="text-[11px] font-bold">Atención<br/>personalizada</p></div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="border-r border-slate-100 pr-3"><p className="text-xl font-black text-[#07172e]">100%</p><p className="mt-1 text-[10px] font-semibold text-slate-500">Cobertura urbana en Chachapoyas</p></div>
+        <div className="pl-1"><p className="text-xl font-black text-[#07172e]">Atención real</p><p className="mt-1 text-[10px] font-semibold text-slate-500">Coordinación directa por WhatsApp</p></div>
+      </div>
+    </section>
   );
 }
 
-// ─── Navbar inferior flotante ─────────────────────────────────────────────────
-function NavbarInferior({vistaActual,totalItems,subtotal,onInicio,onCarrito}:{
-  vistaActual:Vista; totalItems:number; subtotal:number; onInicio:()=>void; onCarrito:()=>void;
-}) {
+function Footer({onServicios,onAsistente}:{onServicios:()=>void;onAsistente:()=>void}) {
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[390px]">
-      <nav className="bg-slate-900/95 backdrop-blur-lg rounded-2xl px-4 py-3 flex justify-between items-center shadow-2xl border border-slate-700/50"
-        aria-label="Navegación principal">
+    <footer className="bg-[#061329] px-5 pb-28 pt-8 text-white">
+      <div className="flex items-start justify-between gap-4">
+        <div><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><p className="mt-2 max-w-[190px] text-[11px] font-medium leading-relaxed text-slate-400">Logística local, atención directa y entregas que se mueven contigo.</p></div>
+        <div className="flex flex-col items-end gap-2 text-xs font-bold text-slate-300"><button onClick={onServicios}>Servicios</button><button onClick={onAsistente}>Asistente</button><a href={WHATSAPP_URL} target="_blank" rel="noreferrer">WhatsApp</a></div>
+      </div>
+      <div className="mt-7 border-t border-white/10 pt-4 text-[9px] font-semibold text-slate-500">© 2026 ChachaFast · Chachapoyas, Amazonas</div>
+    </footer>
+  );
+}
 
-        {/* Inicio */}
-        <button onClick={onInicio}
-          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-200
-                      ${vistaActual==="inicio"||vistaActual==="menu"
-                        ?"bg-orange-600 text-white shadow-md shadow-orange-900/40"
-                        :"bg-slate-800 text-slate-400"}`}
-          aria-label="Ir al inicio">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          <span className="text-[10px] font-bold">Delivery</span>
-        </button>
-
-        <div className="w-px h-8 bg-slate-700" aria-hidden="true"/>
-
-        {/* Carrito */}
-        <button onClick={onCarrito}
-          className={`flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all duration-200
-                      ${vistaActual==="carrito"
-                        ?"bg-orange-600 text-white shadow-lg shadow-orange-900/40 scale-105"
-                        :totalItems>0
-                        ?"bg-orange-600/80 text-white scale-105"
-                        :"bg-slate-800 text-slate-400"}`}
-          aria-label={`Pedido con ${totalItems} productos`}>
-          <div className="relative">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            {totalItems>0 && (
-              <span className="absolute -top-2 -right-2 bg-white text-orange-600 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                {totalItems}
-              </span>
-            )}
-          </div>
-          <div>
-            <p className="text-xs font-bold leading-none">{totalItems>0?"Ver pedido":"Mi pedido"}</p>
-            {totalItems>0 && <p className="text-[11px] font-extrabold mt-0.5 text-orange-100">S/. {subtotal.toFixed(2)}</p>}
-          </div>
-        </button>
-      </nav>
+function MenuMovil({abierto,onCerrar,onIr,onAsistente}:{abierto:boolean;onCerrar:()=>void;onIr:(id:string)=>void;onAsistente:()=>void}) {
+  return (
+    <div className={`fixed inset-0 z-[70] transition-all duration-300 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
+      <button type="button" onClick={onCerrar} aria-label="Cerrar navegación" className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity ${abierto?"opacity-100":"opacity-0"}`} />
+      <aside className={`absolute inset-y-0 left-0 w-[82%] max-w-[340px] bg-[#061329] px-5 py-6 text-white shadow-2xl transition-transform duration-300 ${abierto?"translate-x-0":"-translate-x-full"}`}>
+        <div className="flex items-center justify-between"><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><button type="button" onClick={onCerrar} aria-label="Cerrar menú" className="tap-target rounded-full bg-white/10"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+        <nav className="mt-10 space-y-2" aria-label="Navegación móvil">
+          <button onClick={() => onIr("inicio")} className="flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10">Inicio</button>
+          <button onClick={() => onIr("servicios")} className="flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10">Servicios</button>
+          <button onClick={() => {onCerrar();onAsistente();}} className="flex min-h-[52px] w-full items-center rounded-2xl bg-amber-400 px-4 text-left text-sm font-black text-slate-950">Abrir asistente</button>
+        </nav>
+        <p className="absolute bottom-7 left-5 text-[10px] font-semibold text-slate-500">Delivery local en Chachapoyas</p>
+      </aside>
     </div>
   );
 }
+
+function AsistenteDelivery({abierto,servicio,sesion,onCerrar,onAbrir,onSeleccionar}:{abierto:boolean;servicio:Servicio|null;sesion:number;onCerrar:()=>void;onAbrir:()=>void;onSeleccionar:(servicio:Servicio)=>void}) {
+  const [preparando,setPreparando] = useState(false);
+  const [mensajes,setMensajes] = useState<MensajeChat[]>([]);
+  const [respuestas,setRespuestas] = useState<string[]>([]);
+  const [paso,setPaso] = useState(0);
+  const [entrada,setEntrada] = useState("");
+  const [escribiendo,setEscribiendo] = useState(false);
+  const [completado,setCompletado] = useState(false);
+  const areaRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<number|null>(null);
+
+  useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    if (!abierto) return;
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    setEntrada(""); setRespuestas([]); setPaso(0); setCompletado(false); setEscribiendo(false);
+    if (!servicio) { setPreparando(false); setMensajes([]); return; }
+    setPreparando(true); setMensajes([]);
+    timerRef.current = window.setTimeout(() => {
+      setPreparando(false);
+      setMensajes([
+        {id:"hola",autor:"asistente",texto:"Hola 👋"},
+        {id:"presentacion",autor:"asistente",texto:`Soy el asistente de ChachaFast. Veo que deseas solicitar ${servicio.titulo.toLowerCase()}.`},
+        {id:"pregunta-0",autor:"asistente",texto:`Comencemos.\n${servicio.preguntas[0]}`},
+      ]);
+    }, 650);
+  }, [abierto, servicio, sesion]);
+
+  useEffect(() => { areaRef.current?.scrollTo({top:areaRef.current.scrollHeight,behavior:"smooth"}); }, [mensajes,escribiendo,completado]);
+
+  const responder = (valor?:string) => {
+    const texto = (valor??entrada).trim();
+    if (!texto||!servicio||escribiendo||completado) return;
+    const nuevas = [...respuestas,texto];
+    setRespuestas(nuevas); setEntrada("");
+    setMensajes(actuales => [...actuales,{id:`u-${Date.now()}`,autor:"usuario",texto}]);
+    setEscribiendo(true);
+    timerRef.current = window.setTimeout(() => {
+      if (paso < servicio.preguntas.length-1) {
+        const siguiente = paso+1;
+        setPaso(siguiente);
+        setMensajes(actuales => [...actuales,{id:`p-${siguiente}`,autor:"asistente",texto:`Perfecto.\n${servicio.preguntas[siguiente]}`}]);
+      } else {
+        setCompletado(true);
+        setMensajes(actuales => [...actuales,{id:"listo",autor:"asistente",texto:"¡Listo! Ya tengo los datos principales. Revisa el resumen y confirma la solicitud por WhatsApp."}]);
+      }
+      setEscribiendo(false);
+    }, 520);
+  };
+
+  const resumen = servicio?.preguntas.map((pregunta,indice) => `${indice+1}. ${pregunta}\n${respuestas[indice]??"—"}`).join("\n\n")??"";
+  const confirmarUrl = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(servicio?`SOLICITUD ${servicio.titulo.toUpperCase()}\n\n${resumen}`:"Hola, deseo solicitar un delivery.")}`;
+
+  return (
+    <>
+      <button type="button" aria-label="Abrir asistente ChachaFast" onClick={onAbrir} className={`fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full border border-amber-300/30 bg-[#07172e] p-2.5 pr-4 text-white shadow-[0_18px_45px_-16px_rgba(2,12,32,0.8)] transition-all duration-300 hover:-translate-y-1 ${abierto?"pointer-events-none translate-y-5 opacity-0":"opacity-100"}`}>
+        <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-slate-950"><IconoChat/><span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[#07172e] bg-emerald-400"/></span>
+        <span className="text-left"><span className="block text-[9px] font-semibold text-slate-400">Asistente en línea</span><span className="block text-xs font-black">¿Te ayudo?</span></span>
+      </button>
+
+      <div className={`fixed inset-0 z-[80] transition-all duration-500 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
+        <button type="button" onClick={onCerrar} aria-label="Cerrar asistente" className={`absolute inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity duration-500 ${abierto?"opacity-100":"opacity-0"}`} />
+        <section aria-label="Asistente de delivery" className={`absolute inset-x-0 bottom-0 mx-auto flex h-[82dvh] max-h-[720px] max-w-[430px] flex-col overflow-hidden rounded-t-[2rem] bg-[#f7f9fc] shadow-[0_-25px_70px_-20px_rgba(2,12,32,0.6)] transition-transform duration-500 ease-out ${abierto?"translate-y-0":"translate-y-full"}`}>
+          <header className="shrink-0 bg-[#07172e] px-4 pb-4 pt-3 text-white">
+            <div className="mx-auto mb-3 h-1 w-11 rounded-full bg-white/20" />
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-slate-950"><IconoChat/><span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#07172e] bg-emerald-400"/></span>
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">Asistente ChachaFast</p><p className="mt-0.5 text-[10px] font-semibold text-slate-400">En línea · Respuesta inmediata</p></div>
+              <button type="button" onClick={onCerrar} aria-label="Cerrar ventana del asistente" className="tap-target rounded-full bg-white/10 text-slate-300"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+          </header>
+
+          {servicio && <div className="shrink-0 border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-[10px] font-extrabold text-amber-900">Servicio seleccionado: <span className="font-black">{servicio.titulo}</span></div>}
+
+          <div ref={areaRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4 scrollbar-none" aria-live="polite">
+            {!servicio && !preparando && <SelectorServicios onSeleccionar={onSeleccionar}/>} 
+            {preparando && <div className="flex h-full flex-col items-center justify-center text-center"><span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-200 animate-pulse"><IconoChat/></span><p className="mt-4 text-sm font-black text-[#07172e]">Preparando tu solicitud…</p><p className="mt-1 text-[11px] font-medium text-slate-500">Solo tomará un momento</p></div>}
+            {!preparando && mensajes.map(mensaje => <Burbuja key={mensaje.id} mensaje={mensaje}/>) }
+            {escribiendo && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-100 bg-white px-4 py-3 shadow-sm"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:120ms]"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:240ms]"/><span className="ml-1 text-[9px] font-bold text-slate-400">escribiendo…</span></div></div>}
+            {completado && servicio && <Resumen servicio={servicio} respuestas={respuestas}/>} 
+          </div>
+
+          {servicio && !preparando && <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+            {!completado ? <>
+              {servicio.preguntas[paso]?.toLowerCase().includes("pago") && <div className="mb-2 flex gap-2"><button onClick={() => responder("Efectivo")} className="flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700">Efectivo</button><button onClick={() => responder("Yape / Plin")} className="flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700">Yape / Plin</button></div>}
+              <div className="flex items-end gap-2"><textarea value={entrada} onChange={event => setEntrada(event.target.value)} onKeyDown={event => {if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();responder();}}} rows={1} placeholder="Escribe tu respuesta…" aria-label="Respuesta para el asistente" className="min-h-12 max-h-24 flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-xs font-medium outline-none transition-colors focus:border-amber-400 focus:bg-white"/><button type="button" onClick={() => responder()} disabled={!entrada.trim()||escribiendo} aria-label="Enviar respuesta" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 transition-all active:scale-95 disabled:opacity-40"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
+            </> : <a href={confirmarUrl} target="_blank" rel="noreferrer" className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition-colors hover:bg-emerald-600"><IconoWhatsApp className="h-5 w-5"/> Confirmar por WhatsApp</a>}
+          </div>}
+        </section>
+      </div>
+    </>
+  );
+}
+
+function SelectorServicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
+  return <div><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950"><IconoChat/></span><h3 className="mt-4 text-xl font-black text-[#07172e]">Hola 👋</h3><p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">Soy el asistente de ChachaFast. ¿Qué servicio necesitas coordinar?</p><div className="mt-5 grid grid-cols-2 gap-2">{SERVICIOS.map(item => <button key={item.id} onClick={() => onSeleccionar(item)} className="rounded-2xl border border-slate-100 bg-white p-3 text-left text-[11px] font-black text-slate-700 shadow-sm transition-all hover:border-amber-200 hover:bg-amber-50 active:scale-95">{item.titulo}</button>)}</div></div>;
+}
+
+function Burbuja({mensaje}:{mensaje:MensajeChat}) {
+  return <div className={`flex ${mensaje.autor==="usuario"?"justify-end":"justify-start"}`}><div className={`max-w-[86%] whitespace-pre-line rounded-2xl px-4 py-3 text-[12px] font-medium leading-relaxed shadow-sm ${mensaje.autor==="usuario"?"rounded-br-md bg-[#0c2b50] text-white":"rounded-bl-md border border-slate-100 bg-white text-slate-700"}`}>{mensaje.texto}</div></div>;
+}
+
+function Resumen({servicio,respuestas}:{servicio:Servicio;respuestas:string[]}) {
+  return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-[10px] font-black uppercase tracking-wider text-amber-700">Resumen de solicitud</p><h4 className="mt-1 text-sm font-black text-amber-950">{servicio.titulo}</h4><div className="mt-3 space-y-2">{servicio.preguntas.map((pregunta,index) => <div key={pregunta}><p className="text-[9px] font-bold text-amber-700">{pregunta}</p><p className="mt-0.5 text-[11px] font-semibold text-slate-700">{respuestas[index]}</p></div>)}</div></div>;
+}
+
+function IconoServicio({tipo}:{tipo:ServicioId}) {
+  const common = "h-7 w-7";
+  if(tipo==="compras") return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 8h14l-1 12H6L5 8Zm4 2V6a3 3 0 0 1 6 0v4"/></svg>;
+  if(tipo==="medicinas") return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="m7 17 10-10a3.5 3.5 0 1 1 5 5L12 22a3.5 3.5 0 0 1-5-5Zm5-5 5 5M5 3v6M2 6h6"/></svg>;
+  if(tipo==="paquetes") return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7m-8 4v10"/></svg>;
+  if(tipo==="documentos") return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 3h7l4 4v14H7V3Zm7 0v5h5M10 13h5m-5 4h5"/></svg>;
+  if(tipo==="encomiendas") return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 6h11v11H3V6Zm11 4h4l3 3v4h-7v-7ZM6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>;
+  return <svg className={common} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 2 5 13h6l-1 9 9-12h-6V2Z"/></svg>;
+}
+
+function IconoWhatsApp({className}:{className:string}) { return <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-1.75-.88-2.9-1.56-4.06-3.55-.17-.3-.02-.46.13-.61.44-.44.66-.87.99-1.45.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37C3.68 7.35 3.25 10 4.38 12.3c1.6 3.25 4.03 4.92 7.23 6.05 1.86.65 3.55.56 4.89.34 1.49-.24 2.97-1.82 3.22-2.53.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35h-1.85Z"/><path d="M12 0A12 12 0 0 0 1.53 17.85L.06 23.57a.5.5 0 0 0 .61.64l5.92-1.55A12 12 0 1 0 12 0Zm0 21.82a9.8 9.8 0 0 1-5.03-1.38l-.36-.21-3.72.97.99-3.62-.23-.38A9.82 9.82 0 1 1 12 21.82Z"/></svg>; }
+function IconoChat(){return <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M7 16l-3 3v-5a8 8 0 1 1 3 2Z"/></svg>;}
+function IconoBeneficio({tipo}:{tipo:string}){if(tipo==="ubicacion")return <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;if(tipo==="escudo")return <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Zm-3 9 2 2 4-4"/></svg>;if(tipo==="soporte")return <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M4 14v-3a8 8 0 0 1 16 0v3M4 14h3v6H5a1 1 0 0 1-1-1v-5Zm16 0h-3v6h2a1 1 0 0 0 1-1v-5Z"/></svg>;return <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z"/></svg>;}
+function IconoMetrica({tipo}:{tipo:string}){if(tipo==="whatsapp")return <IconoWhatsApp className="h-7 w-7"/>;if(tipo==="reloj")return <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={2}/><path strokeLinecap="round" strokeWidth={2} d="M12 7v5l3 2"/></svg>;return <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 15h11m-8-3h8m-5-3h5m2.5 9.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Zm-13 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0ZM14 9h2.5l2 4H21l1 3h-6l-2-7Z"/></svg>;}
