@@ -13,55 +13,12 @@
   }
 }
 
-@layer utilities {
-  /* Área táctil mínima 44px para accesibilidad */
-  .tap-target {
-    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+@layer components {
+  [data-reveal] {
+    @apply translate-y-5 opacity-0 transition-all duration-500 ease-out;
   }
 
-  /* Ocultar scrollbar */
-  .scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Animación de entrada suave */
-  .fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Pulse suave para indicadores de estado */
-  .pulse-soft {
-    animation: pulseSoft 2s ease-in-out infinite;
-  }
-
-  @keyframes pulseSoft {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.05); }
-  }
-
-  /* Movimiento casi imperceptible para dar profundidad al Hero */
-  .hero-drift {
-    animation: heroDrift 14s ease-in-out infinite alternate;
-    transform-origin: 64% 55%;
-  }
-
-  @keyframes heroDrift {
-    from { transform: scale(1); }
-    to   { transform: scale(1.025); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-drift {
-      animation: none;
-    }
+  [data-reveal].is-visible {
+    @apply translate-y-0 opacity-100;
   }
 }

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">ChachaFast</title>
+  <rect width="512" height="512" rx="128" fill="#061329"/>
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#fbbf24" stroke-width="22"/>
+  <path d="M282 98 152 280h92l-14 134 132-198h-92l12-118Z" fill="#fbbf24"/>
+</svg>

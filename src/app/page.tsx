@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +24,22 @@ const NUMERO_WHATSAPP = "51987654321";
 const WHATSAPP_URL = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(
   "Hola, deseo solicitar un servicio de delivery en Chachapoyas."
 )}`;
+
+const ZONAS = [
+  "Centro de Chachapoyas",
+  "La Molina",
+  "Higos Urco",
+  "Luya Urco",
+  "Sector La Laguna",
+  "Pueblo Joven",
+  "Av. Salamanca",
+  "Mercado Central",
+  "Barrio Vilaya",
+  "Barrio San Roque",
+];
+
+const FOCUS_VISIBLE =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 focus-visible:outline-offset-2";
 
 const SERVICIOS: Servicio[] = [
   {
@@ -141,15 +157,45 @@ export default function HomePage() {
     document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
   };
 
+  useEffect(() => {
+    const elements = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-reveal]")
+    );
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      elements.forEach((element) => element.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f7f9fc] text-slate-950">
-      <Header onMenu={() => setMenuAbierto(true)} onServicios={() => irA("servicios")} onAsistente={abrirAsistente} />
+      <Header menuAbierto={menuAbierto} onMenu={() => setMenuAbierto(true)} onServicios={() => irA("servicios")} onAsistente={abrirAsistente} />
 
-      <main>
+      <main role="main">
         <Hero onSolicitar={abrirAsistente} onServicios={() => irA("servicios")} />
         <Metricas />
         <Servicios onSeleccionar={seleccionarServicio} />
         <Confianza onSolicitar={abrirAsistente} />
+        <Cobertura />
       </main>
 
       <Footer onServicios={() => irA("servicios")} onAsistente={abrirAsistente} />
@@ -167,16 +213,16 @@ export default function HomePage() {
   );
 }
 
-function Header({onMenu,onServicios,onAsistente}:{onMenu:()=>void;onServicios:()=>void;onAsistente:()=>void}) {
+function Header({menuAbierto,onMenu,onServicios,onAsistente}:{menuAbierto:boolean;onMenu:()=>void;onServicios:()=>void;onAsistente:()=>void}) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#061329]/95 px-4 py-3 text-white shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+    <header role="banner" className="sticky top-0 z-40 border-b border-white/10 bg-[#061329]/95 px-4 py-3 text-white shadow-lg shadow-slate-950/10 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[430px] items-center gap-3">
-        <button onClick={onMenu} type="button" aria-label="Abrir navegación" className="tap-target -ml-1 rounded-xl text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+        <button onClick={onMenu} type="button" aria-label="Abrir menu de navegacion" aria-expanded={menuAbierto} className={`-ml-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${FOCUS_VISIBLE}`}>
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeWidth={2.2} d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>
-        <button type="button" onClick={() => window.scrollTo({top:0,behavior:"smooth"})} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+        <button type="button" onClick={() => window.scrollTo({top:0,behavior:"smooth"})} className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left ${FOCUS_VISIBLE}`}>
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 text-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.15)]">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z" /></svg>
           </span>
@@ -185,12 +231,12 @@ function Header({onMenu,onServicios,onAsistente}:{onMenu:()=>void;onServicios:()
             <span className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Delivery activo</span>
           </span>
         </button>
-        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="Contactar por WhatsApp" className="flex min-h-11 items-center gap-2 rounded-full bg-emerald-500 px-3.5 text-xs font-black shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-400 active:scale-95">
+        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="Solicitar delivery por WhatsApp" className={`flex min-h-11 items-center gap-2 rounded-full bg-emerald-500 px-3.5 text-xs font-black shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-400 active:scale-95 ${FOCUS_VISIBLE}`}>
           <IconoWhatsApp className="h-4 w-4" />
           <span className="hidden min-[370px]:inline">WhatsApp</span>
         </a>
       </div>
-      <nav className="sr-only" aria-label="Navegación principal">
+      <nav role="navigation" className="sr-only" aria-label="Navegacion principal">
         <button onClick={onServicios}>Servicios</button><button onClick={onAsistente}>Asistente</button>
       </nav>
     </header>
@@ -200,29 +246,28 @@ function Header({onMenu,onServicios,onAsistente}:{onMenu:()=>void;onServicios:()
 function Hero({onSolicitar,onServicios}:{onSolicitar:()=>void;onServicios:()=>void}) {
   return (
     <section id="inicio" className="px-3 pt-3">
-      <div className="relative min-h-[720px] overflow-hidden rounded-[2rem] bg-[#061329] text-white shadow-[0_30px_80px_-32px_rgba(2,12,32,0.75)]">
-        <Image src="/images/delivery-rider-chachapoyas.webp" alt="Repartidor local de ChachaFast en Chachapoyas" fill priority sizes="(max-width: 430px) 100vw, 430px" className="hero-drift object-cover object-[62%_center]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#061329]/95 via-[#061329]/72 to-[#061329]/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#061329]/85 via-[#061329]/20 to-transparent" />
-        <div className="absolute -left-16 top-32 h-56 w-56 rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
+      <div className="relative min-h-[620px] overflow-hidden rounded-[1.75rem] bg-[#061329] text-white shadow-[0_28px_70px_-30px_rgba(2,12,32,0.72)] sm:min-h-[660px]">
+        <Image src="/images/delivery-rider-chachapoyas.webp" alt="Motociclista de ChachaFast listo para entrega en Chachapoyas" fill priority fetchPriority="high" sizes="(max-width: 430px) 100vw, 430px" className="object-cover object-[62%_center] brightness-[1.06] contrast-[1.04]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#061329]/90 via-[#061329]/58 to-[#061329]/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#061329]/78 via-[#061329]/18 to-transparent" />
 
-        <div className="relative z-10 px-6 pb-52 pt-7">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-slate-950/35 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-300 backdrop-blur-md">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z" /></svg>
+        <div className="relative z-10 px-6 pb-40 pt-6 sm:pb-48 sm:pt-8">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-[#061329]/42 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-amber-300 backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)]" aria-hidden="true" />
             Delivery activo en Chachapoyas
           </div>
-          <h1 className="mt-6 max-w-[340px] text-[2.7rem] font-black leading-[0.98] tracking-[-0.045em] min-[390px]:text-[3rem]">
-            Tu delivery<br/><span className="text-amber-400">rápido y seguro</span>
+          <h1 className="max-w-[340px] text-4xl font-black leading-[1.08] text-white md:text-5xl">
+            Tu delivery <span className="text-amber-400">rápido y seguro</span>
           </h1>
-          <p className="mt-5 max-w-[315px] text-[15px] font-semibold leading-relaxed text-slate-200">
+          <p className="mt-5 max-w-[360px] text-[15px] font-medium leading-6 text-white/80 sm:text-base">
             Recojos, compras por encargo, medicamentos y encomiendas. Estamos cerca para ayudarte en minutos.
           </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <button onClick={onSolicitar} type="button" className="flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 px-5 text-sm font-black shadow-[0_16px_35px_-14px_rgba(16,185,129,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 active:scale-[0.98]">
+          <div className="mt-7 flex flex-col gap-3">
+            <button onClick={onSolicitar} type="button" className={`inline-flex w-full max-w-[340px] items-center justify-center gap-2.5 rounded-full bg-emerald-500 px-8 py-4 text-base font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-[0_4px_16px_rgba(16,185,129,0.40)] active:translate-y-0 ${FOCUS_VISIBLE}`} aria-label="Solicitar delivery por WhatsApp">
               <IconoWhatsApp className="h-5 w-5" /> Solicitar Delivery
             </button>
-            <button onClick={onServicios} type="button" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-slate-950/30 px-5 text-sm font-black backdrop-blur-md transition-all duration-300 hover:bg-white/10 active:scale-[0.98]">
-              Ver servicios
+            <button onClick={onServicios} type="button" className={`flex min-h-14 w-full max-w-[340px] items-center justify-center gap-2 rounded-full border border-white/35 bg-slate-950/25 px-8 py-4 text-sm font-bold backdrop-blur-md transition-all duration-200 ease-out hover:border-white/50 hover:bg-white/10 active:scale-[0.98] ${FOCUS_VISIBLE}`}>
+              Explorar servicios
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m6 9 6 6 6-6" /></svg>
             </button>
           </div>
@@ -234,10 +279,10 @@ function Hero({onSolicitar,onServicios}:{onSolicitar:()=>void;onServicios:()=>vo
             {icono:"ubicacion",titulo:"Cobertura local",detalle:"en la ciudad"},
             {icono:"escudo",titulo:"Atención real",detalle:"y confiable"},
           ].map(item => (
-            <div key={item.titulo} className="rounded-2xl border border-white/15 bg-[#0c2747]/80 px-2 py-3 text-center shadow-xl backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1">
-              <span className="mx-auto flex h-8 w-8 items-center justify-center text-amber-400"><IconoBeneficio tipo={item.icono} /></span>
-              <p className="mt-1 text-[10px] font-black leading-tight">{item.titulo}</p>
-              <p className="mt-0.5 text-[9px] font-semibold text-slate-300">{item.detalle}</p>
+            <div key={item.titulo} className="flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#061329]/28 px-2 py-3 text-center backdrop-blur-md">
+              <span className="flex h-7 w-7 items-center justify-center text-amber-300"><IconoBeneficio tipo={item.icono} /></span>
+              <span className="text-xs font-bold leading-4 text-white sm:text-sm">{item.titulo}</span>
+              <span className="text-[11px] leading-4 text-white/55">{item.detalle}</span>
             </div>
           ))}
         </div>
@@ -253,35 +298,35 @@ function Metricas() {
     {icono:"reloj",eyebrow:"Entrega en",valor:"45 min*",detalle:"Tiempo estimado",color:"text-amber-500"},
   ];
   return (
-    <section aria-label="Datos del servicio" className="mx-4 -mt-1 rounded-[1.75rem] bg-[#07172e] px-3 py-5 text-white shadow-[0_20px_45px_-24px_rgba(2,12,32,0.8)]">
-      <div className="grid grid-cols-3 divide-x divide-white/10">
-        {items.map(item => (
-          <div key={item.valor} className="px-2 text-center">
-            <span className={`mx-auto flex h-9 w-9 items-center justify-center ${item.color}`}><IconoMetrica tipo={item.icono}/></span>
-            <p className="mt-1 text-[8px] font-bold uppercase tracking-wide text-slate-400">{item.eyebrow}</p>
-            <p className="mt-0.5 text-sm font-black leading-tight min-[390px]:text-base">{item.valor}</p>
-            <p className="mt-1 text-[9px] font-medium text-slate-400">{item.detalle}</p>
+    <section data-reveal aria-label="Datos del servicio" className="mx-4 mt-5 rounded-2xl bg-slate-950 text-white shadow-[0_16px_34px_-24px_rgba(2,12,32,0.7)]">
+      <div className="grid grid-cols-1 overflow-hidden rounded-2xl bg-slate-950 sm:grid-cols-3">
+        {items.map((item, index) => (
+          <div key={item.valor} className={`relative flex flex-col items-center justify-center gap-1 px-4 py-6 text-center ${index > 0 ? "border-t border-white/10 sm:border-t-0" : ""} ${index < items.length - 1 ? "sm:border-r sm:border-white/10" : ""}`}>
+            <span className={`mb-1 flex h-8 w-8 items-center justify-center opacity-80 ${item.color}`}><IconoMetrica tipo={item.icono}/></span>
+            <span className="text-xs font-medium uppercase tracking-wider text-white/50">{item.eyebrow}</span>
+            <span className="text-xl font-black text-amber-400">{item.valor}</span>
+            <span className="text-xs text-white/45">{item.detalle}</span>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-center text-[9px] font-medium text-slate-500">*Tiempo referencial según zona, disponibilidad y tráfico.</p>
+      <p className="px-4 pb-5 text-center text-[9px] font-medium text-white/45">*Tiempo referencial según zona, disponibilidad y tráfico.</p>
     </section>
   );
 }
 
 function Servicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
   return (
-    <section id="servicios" className="scroll-mt-20 px-4 py-14">
+    <section id="servicios" className="scroll-mt-20 px-4 py-16">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">Logística a tu medida</p>
-          <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-[#07172e]">Nuestros servicios</h2>
+          <p className="text-sm font-bold uppercase tracking-wide text-amber-600">Logística a tu medida</p>
+          <h2 className="mt-2.5 text-3xl font-black leading-tight text-[#07172e]">Nuestros servicios</h2>
         </div>
-        <span className="mb-1 text-[10px] font-extrabold text-slate-400">6 soluciones</span>
+        <span className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">6 soluciones</span>
       </div>
-      <p className="mt-3 max-w-[350px] text-sm font-medium leading-relaxed text-slate-500">Elige una operación y nuestro asistente coordinará contigo cada detalle.</p>
+      <p className="mt-4 max-w-[350px] text-sm font-medium leading-6 text-slate-600">Elige una operación y nuestro asistente coordinará contigo cada detalle.</p>
 
-      <div className="mt-7 grid grid-cols-1 gap-3 min-[340px]:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2">
         {SERVICIOS.map(servicio => <TarjetaServicio key={servicio.id} servicio={servicio} onSeleccionar={onSeleccionar}/>) }
       </div>
     </section>
@@ -290,17 +335,17 @@ function Servicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
 
 function TarjetaServicio({servicio,onSeleccionar}:{servicio:Servicio;onSeleccionar:(servicio:Servicio)=>void}) {
   return (
-    <button type="button" onClick={() => onSeleccionar(servicio)} aria-label={`Solicitar ${servicio.titulo}`}
-      className="group relative min-h-[210px] overflow-hidden rounded-[1.6rem] border border-slate-100 bg-white p-5 text-left shadow-[0_14px_35px_-26px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_20px_42px_-24px_rgba(245,158,11,0.38)] active:scale-[0.97]">
-      <span className="absolute right-0 top-0 h-20 w-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-amber-50 opacity-0 transition-all duration-300 group-hover:scale-150 group-hover:opacity-100" aria-hidden="true" />
-      <span className={`relative flex h-14 w-14 items-center justify-center rounded-2xl ring-1 transition-transform duration-300 group-hover:scale-105 ${servicio.estilo}`}>
+    <button data-reveal type="button" onClick={() => onSeleccionar(servicio)} aria-label={`Solicitar ${servicio.titulo}`}
+      className={`group relative h-full min-h-[226px] overflow-hidden rounded-2xl border border-slate-200/90 bg-[#fcfcfd] p-6 text-left shadow-[0_8px_22px_-18px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_28px_-18px_rgba(15,23,42,0.42)] active:translate-y-0 active:scale-[0.99] ${FOCUS_VISIBLE}`}>
+      <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-amber-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden="true" />
+      <span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${servicio.estilo}`}>
         <IconoServicio tipo={servicio.id}/>
       </span>
-      <p className="relative mt-4 text-[9px] font-black uppercase tracking-[0.11em] text-slate-400">{servicio.etiqueta}</p>
-      <h3 className="relative mt-1.5 text-[15px] font-black leading-tight text-[#07172e]">{servicio.titulo}</h3>
-      <p className="relative mt-2 text-[11px] font-medium leading-relaxed text-slate-500">{servicio.descripcion}</p>
-      <span className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-amber-400 group-hover:text-slate-950">
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.3} d="m9 5 7 7-7 7" /></svg>
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-emerald-600">{servicio.etiqueta}</p>
+      <h3 className="mb-2 text-lg font-extrabold leading-6 text-slate-900">{servicio.titulo}</h3>
+      <p className="pr-7 text-sm leading-6 text-slate-500">{servicio.descripcion}</p>
+      <span className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:border-emerald-500 group-hover:bg-emerald-500 group-hover:text-white">
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
       </span>
     </button>
   );
@@ -308,39 +353,93 @@ function TarjetaServicio({servicio,onSeleccionar}:{servicio:Servicio;onSeleccion
 
 function Confianza({onSolicitar}:{onSolicitar:()=>void}) {
   return (
-    <section id="confianza" className="px-4 pb-14">
-      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0c2b50] to-[#061329] px-5 py-7 text-white shadow-[0_24px_55px_-30px_rgba(2,12,32,0.8)]">
-        <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
-        <div className="relative">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-950/20"><IconoServicio tipo="express"/></span>
-          <h2 className="mt-5 text-2xl font-black tracking-tight">¿Listo para tu <span className="text-amber-400">delivery?</span></h2>
-          <p className="mt-2 max-w-[300px] text-sm font-medium leading-relaxed text-slate-300">Cuéntanos qué necesitas. Una persona real te ayudará a confirmar el recojo, la tarifa y la entrega.</p>
-          <button onClick={onSolicitar} type="button" className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 text-sm font-black shadow-lg shadow-emerald-950/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-400 active:scale-[0.98]">
-            <IconoWhatsApp className="h-5 w-5"/> Solicitar ahora
-          </button>
-          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
-            <div className="flex items-center gap-2.5"><span className="text-amber-400"><IconoBeneficio tipo="escudo"/></span><p className="text-[11px] font-bold">Seguro y<br/>confiable</p></div>
-            <div className="flex items-center gap-2.5"><span className="text-amber-400"><IconoBeneficio tipo="soporte"/></span><p className="text-[11px] font-bold">Atención<br/>personalizada</p></div>
+    <section id="confianza" className="px-4 pb-16">
+      <div data-reveal className="relative mx-auto overflow-hidden rounded-3xl bg-slate-950 px-6 py-12 text-center shadow-[0_24px_48px_-30px_rgba(2,12,32,0.72)] sm:max-w-[700px] sm:px-12 sm:py-16">
+        <div className="relative mx-auto mb-6 flex h-[60px] w-[60px] items-center justify-center rounded-2xl bg-amber-400/15 text-amber-400">
+          <IconoServicio tipo="express"/>
+        </div>
+        <h2 className="relative mb-4 text-3xl font-black leading-tight text-white">
+          ¿Listo para tu <span className="text-amber-400">delivery</span>?
+        </h2>
+        <p className="relative mx-auto mb-8 max-w-[400px] text-base leading-relaxed text-white/65">
+          Cuéntanos qué necesitas. Una persona real te ayudará a confirmar el recojo, la tarifa y la entrega.
+        </p>
+        <button onClick={onSolicitar} type="button" aria-label="Solicitar delivery por WhatsApp" className={`relative inline-flex w-full max-w-[340px] items-center justify-center gap-2.5 rounded-full bg-emerald-500 px-8 py-4 text-base font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-[0_4px_16px_rgba(16,185,129,0.40)] ${FOCUS_VISIBLE}`}>
+          <IconoWhatsApp className="h-5 w-5"/> Solicitar ahora
+        </button>
+        <div className="relative mt-6 flex flex-wrap justify-center gap-6">
+          <div className="flex items-center gap-1.5 text-sm text-white/60">
+            <span className="text-emerald-500"><IconoBeneficio tipo="escudo"/></span>
+            Seguro y confiable
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-white/60">
+            <span className="text-emerald-500"><IconoBeneficio tipo="soporte"/></span>
+            Atención personalizada
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-sm">
-        <div className="border-r border-slate-100 pr-3"><p className="text-xl font-black text-[#07172e]">100%</p><p className="mt-1 text-[10px] font-semibold text-slate-500">Cobertura urbana en Chachapoyas</p></div>
-        <div className="pl-1"><p className="text-xl font-black text-[#07172e]">Atención real</p><p className="mt-1 text-[10px] font-semibold text-slate-500">Coordinación directa por WhatsApp</p></div>
+      <div data-reveal className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200/80 bg-[#fcfcfd] p-5 shadow-[0_8px_22px_-20px_rgba(15,23,42,0.3)]">
+        <div className="border-r border-slate-100 pr-3"><p className="text-xl font-black text-slate-900">100%</p><p className="mt-1 text-xs font-medium text-slate-500">Cobertura urbana en Chachapoyas</p></div>
+        <div className="pl-1"><p className="text-xl font-black text-slate-900">Atención real</p><p className="mt-1 text-xs font-medium text-slate-500">Coordinación directa por WhatsApp</p></div>
       </div>
+    </section>
+  );
+}
+
+function Cobertura() {
+  return (
+    <section aria-labelledby="cobertura-titulo" className="border-t border-slate-200/70 bg-white px-4 py-16 sm:px-8">
+      <div data-reveal>
+        <h2 id="cobertura-titulo" className="text-3xl font-black text-slate-900">
+          ¿Llegamos a tu zona?
+        </h2>
+        <p className="mt-3 max-w-[370px] text-base leading-6 text-slate-600">
+          Operamos dentro de la ciudad de Chachapoyas y alrededores inmediatos.
+        </p>
+      </div>
+      <div className="mt-8 flex flex-wrap gap-2.5">
+        {ZONAS.map((zona) => (
+          <span key={zona} data-reveal className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-[#fcfcfd] px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_4px_12px_-10px_rgba(15,23,42,0.28)] transition-colors duration-200 ease-out hover:border-amber-300 hover:bg-amber-50 active:bg-amber-100">
+            {zona}
+          </span>
+        ))}
+      </div>
+      <p data-reveal className="mt-8 text-sm leading-6 text-slate-600">
+        ¿Tu zona no aparece?{" "}
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-700 ${FOCUS_VISIBLE}`}
+        >
+          Escríbenos, podemos coordinar.
+        </a>
+      </p>
     </section>
   );
 }
 
 function Footer({onServicios,onAsistente}:{onServicios:()=>void;onAsistente:()=>void}) {
   return (
-    <footer className="bg-[#061329] px-5 pb-28 pt-8 text-white">
-      <div className="flex items-start justify-between gap-4">
-        <div><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><p className="mt-2 max-w-[190px] text-[11px] font-medium leading-relaxed text-slate-400">Logística local, atención directa y entregas que se mueven contigo.</p></div>
-        <div className="flex flex-col items-end gap-2 text-xs font-bold text-slate-300"><button onClick={onServicios}>Servicios</button><button onClick={onAsistente}>Asistente</button><a href={WHATSAPP_URL} target="_blank" rel="noreferrer">WhatsApp</a></div>
+    <footer role="contentinfo" className="bg-[#0a0f1e] px-6 pb-7 pt-14 text-white">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-9 border-b border-white/[0.08] pb-9 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex max-w-[280px] flex-col gap-3">
+          <p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p>
+          <p className="text-sm leading-relaxed text-white/45">Delivery local en Chachapoyas.<br/>Rápido, seguro y siempre cerca.</p>
+          <div className="inline-flex items-center gap-2 text-xs text-white/50">
+            <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" aria-hidden="true" />
+            Atención: Lun-Dom, 8am-10pm
+          </div>
+        </div>
+        <nav aria-label="Enlaces del footer" className="flex flex-col gap-1">
+          <button onClick={onServicios} className={`flex min-h-11 items-center text-left text-sm font-semibold text-white/60 transition-colors duration-200 hover:text-white ${FOCUS_VISIBLE}`}>Servicios</button>
+          <button onClick={onAsistente} className={`flex min-h-11 items-center text-left text-sm font-semibold text-white/60 transition-colors duration-200 hover:text-white ${FOCUS_VISIBLE}`}>WhatsApp</button>
+        </nav>
       </div>
-      <div className="mt-7 border-t border-white/10 pt-4 text-[9px] font-semibold text-slate-500">© 2026 ChachaFast · Chachapoyas, Amazonas</div>
+      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-2 pt-6 text-center sm:flex-row sm:justify-between">
+        <span className="text-xs text-white/30">© 2026 ChachaFast · Chachapoyas, Amazonas</span>
+      </div>
     </footer>
   );
 }
@@ -348,15 +447,15 @@ function Footer({onServicios,onAsistente}:{onServicios:()=>void;onAsistente:()=>
 function MenuMovil({abierto,onCerrar,onIr,onAsistente}:{abierto:boolean;onCerrar:()=>void;onIr:(id:string)=>void;onAsistente:()=>void}) {
   return (
     <div className={`fixed inset-0 z-[70] transition-all duration-300 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
-      <button type="button" onClick={onCerrar} aria-label="Cerrar navegación" className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity ${abierto?"opacity-100":"opacity-0"}`} />
+      <button type="button" onClick={onCerrar} aria-label="Cerrar navegacion" className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity ${abierto?"opacity-100":"opacity-0"} ${FOCUS_VISIBLE}`} />
       <aside className={`absolute inset-y-0 left-0 w-[82%] max-w-[340px] bg-[#061329] px-5 py-6 text-white shadow-2xl transition-transform duration-300 ${abierto?"translate-x-0":"-translate-x-full"}`}>
-        <div className="flex items-center justify-between"><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><button type="button" onClick={onCerrar} aria-label="Cerrar menú" className="tap-target rounded-full bg-white/10"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18"/></svg></button></div>
-        <nav className="mt-10 space-y-2" aria-label="Navegación móvil">
-          <button onClick={() => onIr("inicio")} className="flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10">Inicio</button>
-          <button onClick={() => onIr("servicios")} className="flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10">Servicios</button>
-          <button onClick={() => {onCerrar();onAsistente();}} className="flex min-h-[52px] w-full items-center rounded-2xl bg-amber-400 px-4 text-left text-sm font-black text-slate-950">Abrir asistente</button>
+        <div className="flex items-center justify-between"><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><button type="button" onClick={onCerrar} aria-label="Cerrar menu" className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10 ${FOCUS_VISIBLE}`}><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+        <nav role="navigation" className="mt-10 space-y-2" aria-label="Navegacion movil">
+          <button onClick={() => onIr("inicio")} className={`flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10 ${FOCUS_VISIBLE}`}>Inicio</button>
+          <button onClick={() => onIr("servicios")} className={`flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10 ${FOCUS_VISIBLE}`}>Servicios</button>
+          <button onClick={() => {onCerrar();onAsistente();}} className={`flex min-h-[52px] w-full items-center rounded-2xl bg-amber-400 px-4 text-left text-sm font-black text-slate-950 ${FOCUS_VISIBLE}`}>Abrir asistente</button>
         </nav>
-        <p className="absolute bottom-7 left-5 text-[10px] font-semibold text-slate-500">Delivery local en Chachapoyas</p>
+        <p className="absolute bottom-7 left-5 text-[10px] font-semibold text-slate-400">Delivery local en Chachapoyas</p>
       </aside>
     </div>
   );
@@ -384,7 +483,7 @@ function AsistenteDelivery({abierto,servicio,sesion,onCerrar,onAbrir,onSeleccion
     timerRef.current = window.setTimeout(() => {
       setPreparando(false);
       setMensajes([
-        {id:"hola",autor:"asistente",texto:"Hola 👋"},
+        {id:"hola",autor:"asistente",texto:"Hola"},
         {id:"presentacion",autor:"asistente",texto:`Soy el asistente de ChachaFast. Veo que deseas solicitar ${servicio.titulo.toLowerCase()}.`},
         {id:"pregunta-0",autor:"asistente",texto:`Comencemos.\n${servicio.preguntas[0]}`},
       ]);
@@ -413,43 +512,43 @@ function AsistenteDelivery({abierto,servicio,sesion,onCerrar,onAbrir,onSeleccion
     }, 520);
   };
 
-  const resumen = servicio?.preguntas.map((pregunta,indice) => `${indice+1}. ${pregunta}\n${respuestas[indice]??"—"}`).join("\n\n")??"";
+  const resumen = servicio?.preguntas.map((pregunta,indice) => `${indice+1}. ${pregunta}\n${respuestas[indice]??"-"}`).join("\n\n")??"";
   const confirmarUrl = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(servicio?`SOLICITUD ${servicio.titulo.toUpperCase()}\n\n${resumen}`:"Hola, deseo solicitar un delivery.")}`;
 
   return (
     <>
-      <button type="button" aria-label="Abrir asistente ChachaFast" onClick={onAbrir} className={`fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full border border-amber-300/30 bg-[#07172e] p-2.5 pr-4 text-white shadow-[0_18px_45px_-16px_rgba(2,12,32,0.8)] transition-all duration-300 hover:-translate-y-1 ${abierto?"pointer-events-none translate-y-5 opacity-0":"opacity-100"}`}>
+      <button type="button" aria-label="Abrir asistente de WhatsApp" onClick={onAbrir} className={`fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full border border-amber-300/30 bg-[#07172e] p-2.5 text-white shadow-[0_18px_45px_-16px_rgba(2,12,32,0.8)] transition-all duration-300 hover:-translate-y-1 min-[390px]:pr-4 ${abierto?"pointer-events-none translate-y-5 opacity-0":"opacity-100"} ${FOCUS_VISIBLE}`}>
         <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-slate-950"><IconoChat/><span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[#07172e] bg-emerald-400"/></span>
-        <span className="text-left"><span className="block text-[9px] font-semibold text-slate-400">Asistente en línea</span><span className="block text-xs font-black">¿Te ayudo?</span></span>
+        <span className="hidden text-left min-[390px]:block"><span className="block text-[9px] font-semibold text-slate-400">Asistente en línea</span><span className="block text-xs font-black">¿Te ayudo?</span></span>
       </button>
 
       <div className={`fixed inset-0 z-[80] transition-all duration-500 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
-        <button type="button" onClick={onCerrar} aria-label="Cerrar asistente" className={`absolute inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity duration-500 ${abierto?"opacity-100":"opacity-0"}`} />
+        <button type="button" onClick={onCerrar} aria-label="Cerrar asistente" className={`absolute inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity duration-500 ${abierto?"opacity-100":"opacity-0"} ${FOCUS_VISIBLE}`} />
         <section aria-label="Asistente de delivery" className={`absolute inset-x-0 bottom-0 mx-auto flex h-[82dvh] max-h-[720px] max-w-[430px] flex-col overflow-hidden rounded-t-[2rem] bg-[#f7f9fc] shadow-[0_-25px_70px_-20px_rgba(2,12,32,0.6)] transition-transform duration-500 ease-out ${abierto?"translate-y-0":"translate-y-full"}`}>
           <header className="shrink-0 bg-[#07172e] px-4 pb-4 pt-3 text-white">
             <div className="mx-auto mb-3 h-1 w-11 rounded-full bg-white/20" />
             <div className="flex items-center gap-3">
               <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-slate-950"><IconoChat/><span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#07172e] bg-emerald-400"/></span>
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">Asistente ChachaFast</p><p className="mt-0.5 text-[10px] font-semibold text-slate-400">En línea · Respuesta inmediata</p></div>
-              <button type="button" onClick={onCerrar} aria-label="Cerrar ventana del asistente" className="tap-target rounded-full bg-white/10 text-slate-300"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m6 6 12 12M18 6 6 18"/></svg></button>
+              <button type="button" onClick={onCerrar} aria-label="Cerrar ventana del asistente" className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10 text-slate-300 ${FOCUS_VISIBLE}`}><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m6 6 12 12M18 6 6 18"/></svg></button>
             </div>
           </header>
 
           {servicio && <div className="shrink-0 border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-[10px] font-extrabold text-amber-900">Servicio seleccionado: <span className="font-black">{servicio.titulo}</span></div>}
 
-          <div ref={areaRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4 scrollbar-none" aria-live="polite">
+          <div ref={areaRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4" aria-live="polite">
             {!servicio && !preparando && <SelectorServicios onSeleccionar={onSeleccionar}/>} 
-            {preparando && <div className="flex h-full flex-col items-center justify-center text-center"><span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-200 animate-pulse"><IconoChat/></span><p className="mt-4 text-sm font-black text-[#07172e]">Preparando tu solicitud…</p><p className="mt-1 text-[11px] font-medium text-slate-500">Solo tomará un momento</p></div>}
+            {preparando && <div className="flex h-full flex-col items-center justify-center text-center"><span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-200 animate-pulse"><IconoChat/></span><p className="mt-4 text-sm font-black text-[#07172e]">Preparando tu solicitud⬦</p><p className="mt-1 text-[11px] font-medium text-slate-500">Solo tomará un momento</p></div>}
             {!preparando && mensajes.map(mensaje => <Burbuja key={mensaje.id} mensaje={mensaje}/>) }
-            {escribiendo && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-100 bg-white px-4 py-3 shadow-sm"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:120ms]"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:240ms]"/><span className="ml-1 text-[9px] font-bold text-slate-400">escribiendo…</span></div></div>}
+            {escribiendo && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-100 bg-white px-4 py-3 shadow-sm"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:120ms]"/><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:240ms]"/><span className="ml-1 text-[9px] font-bold text-slate-400">escribiendo⬦</span></div></div>}
             {completado && servicio && <Resumen servicio={servicio} respuestas={respuestas}/>} 
           </div>
 
           {servicio && !preparando && <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
             {!completado ? <>
-              {servicio.preguntas[paso]?.toLowerCase().includes("pago") && <div className="mb-2 flex gap-2"><button onClick={() => responder("Efectivo")} className="flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700">Efectivo</button><button onClick={() => responder("Yape / Plin")} className="flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700">Yape / Plin</button></div>}
-              <div className="flex items-end gap-2"><textarea value={entrada} onChange={event => setEntrada(event.target.value)} onKeyDown={event => {if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();responder();}}} rows={1} placeholder="Escribe tu respuesta…" aria-label="Respuesta para el asistente" className="min-h-12 max-h-24 flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-xs font-medium outline-none transition-colors focus:border-amber-400 focus:bg-white"/><button type="button" onClick={() => responder()} disabled={!entrada.trim()||escribiendo} aria-label="Enviar respuesta" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 transition-all active:scale-95 disabled:opacity-40"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
-            </> : <a href={confirmarUrl} target="_blank" rel="noreferrer" className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition-colors hover:bg-emerald-600"><IconoWhatsApp className="h-5 w-5"/> Confirmar por WhatsApp</a>}
+              {servicio.preguntas[paso]?.toLowerCase().includes("pago") && <div className="mb-2 flex gap-2"><button onClick={() => responder("Efectivo")} className={`flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700 ${FOCUS_VISIBLE}`}>Efectivo</button><button onClick={() => responder("Yape / Plin")} className={`flex-1 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700 ${FOCUS_VISIBLE}`}>Yape / Plin</button></div>}
+              <div className="flex items-end gap-2"><textarea value={entrada} onChange={event => setEntrada(event.target.value)} onKeyDown={event => {if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();responder();}}} rows={1} placeholder="Escribe tu respuesta⬦" aria-label="Respuesta para el asistente" className={`min-h-12 max-h-24 flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-xs font-medium outline-none transition-colors focus:border-amber-400 focus:bg-white ${FOCUS_VISIBLE}`}/><button type="button" onClick={() => responder()} disabled={!entrada.trim()||escribiendo} aria-label="Enviar respuesta" className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 transition-all active:scale-95 disabled:opacity-40 ${FOCUS_VISIBLE}`}><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2.2} d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
+            </> : <a href={confirmarUrl} target="_blank" rel="noreferrer" aria-label="Solicitar delivery por WhatsApp" className={`flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition-colors hover:bg-emerald-600 ${FOCUS_VISIBLE}`}><IconoWhatsApp className="h-5 w-5"/> Confirmar por WhatsApp</a>}
           </div>}
         </section>
       </div>
@@ -458,7 +557,7 @@ function AsistenteDelivery({abierto,servicio,sesion,onCerrar,onAbrir,onSeleccion
 }
 
 function SelectorServicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
-  return <div><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950"><IconoChat/></span><h3 className="mt-4 text-xl font-black text-[#07172e]">Hola 👋</h3><p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">Soy el asistente de ChachaFast. ¿Qué servicio necesitas coordinar?</p><div className="mt-5 grid grid-cols-2 gap-2">{SERVICIOS.map(item => <button key={item.id} onClick={() => onSeleccionar(item)} className="rounded-2xl border border-slate-100 bg-white p-3 text-left text-[11px] font-black text-slate-700 shadow-sm transition-all hover:border-amber-200 hover:bg-amber-50 active:scale-95">{item.titulo}</button>)}</div></div>;
+  return <div><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950"><IconoChat/></span><h3 className="mt-4 text-xl font-black text-[#07172e]">Hola</h3><p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">Soy el asistente de ChachaFast. ¿Qué servicio necesitas coordinar?</p><div className="mt-5 grid grid-cols-2 gap-2">{SERVICIOS.map(item => <button key={item.id} onClick={() => onSeleccionar(item)} className={`rounded-2xl border border-slate-100 bg-white p-3 text-left text-[11px] font-black text-slate-700 shadow-sm transition-all hover:border-amber-200 hover:bg-amber-50 active:scale-95 ${FOCUS_VISIBLE}`}>{item.titulo}</button>)}</div></div>;
 }
 
 function Burbuja({mensaje}:{mensaje:MensajeChat}) {
