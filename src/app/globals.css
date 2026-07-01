@@ -15,7 +15,7 @@
 
 @layer components {
   [data-reveal] {
-    @apply translate-y-5 opacity-0 transition-all duration-500 ease-out;
+    @apply translate-y-4 opacity-0 transition-all duration-200 ease-out;
   }
 
   [data-reveal].is-visible {

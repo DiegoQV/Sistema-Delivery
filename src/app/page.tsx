@@ -215,7 +215,7 @@ export default function HomePage() {
 
 function Header({menuAbierto,onMenu,onServicios,onAsistente}:{menuAbierto:boolean;onMenu:()=>void;onServicios:()=>void;onAsistente:()=>void}) {
   return (
-    <header role="banner" className="sticky top-0 z-40 border-b border-white/10 bg-[#061329]/95 px-4 py-3 text-white shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+    <header role="banner" className="sticky top-0 z-40 border-b border-white/10 bg-[#061329]/95 px-4 py-3 text-white shadow-[0_8px_24px_-18px_rgba(2,12,32,0.8)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[430px] items-center gap-3">
         <button onClick={onMenu} type="button" aria-label="Abrir menu de navegacion" aria-expanded={menuAbierto} className={`-ml-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${FOCUS_VISIBLE}`}>
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -223,7 +223,7 @@ function Header({menuAbierto,onMenu,onServicios,onAsistente}:{menuAbierto:boolea
           </svg>
         </button>
         <button type="button" onClick={() => window.scrollTo({top:0,behavior:"smooth"})} className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left ${FOCUS_VISIBLE}`}>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 text-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.15)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 text-amber-400">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m13.3 2-8 11H11l-.3 9 8-12H13l.3-8Z" /></svg>
           </span>
           <span className="min-w-0">
@@ -231,7 +231,7 @@ function Header({menuAbierto,onMenu,onServicios,onAsistente}:{menuAbierto:boolea
             <span className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Delivery activo</span>
           </span>
         </button>
-        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="Solicitar delivery por WhatsApp" className={`flex min-h-11 items-center gap-2 rounded-full bg-emerald-500 px-3.5 text-xs font-black shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-400 active:scale-95 ${FOCUS_VISIBLE}`}>
+        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="Solicitar delivery por WhatsApp" className={`flex min-h-11 items-center gap-2 rounded-full bg-emerald-500 px-3.5 text-xs font-black shadow-[0_8px_18px_-10px_rgba(16,185,129,0.75)] transition-all duration-200 ease-out hover:bg-emerald-400 active:scale-[0.98] ${FOCUS_VISIBLE}`}>
           <IconoWhatsApp className="h-4 w-4" />
           <span className="hidden min-[370px]:inline">WhatsApp</span>
         </a>
@@ -247,42 +247,43 @@ function Hero({onSolicitar,onServicios}:{onSolicitar:()=>void;onServicios:()=>vo
   return (
     <section id="inicio" className="px-3 pt-3">
       <div className="relative min-h-[620px] overflow-hidden rounded-[1.75rem] bg-[#061329] text-white shadow-[0_28px_70px_-30px_rgba(2,12,32,0.72)] sm:min-h-[660px]">
-        <Image src="/images/delivery-rider-chachapoyas.webp" alt="Motociclista de ChachaFast listo para entrega en Chachapoyas" fill priority fetchPriority="high" sizes="(max-width: 430px) 100vw, 430px" className="object-cover object-[62%_center] brightness-[1.06] contrast-[1.04]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#061329]/90 via-[#061329]/58 to-[#061329]/10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#061329]/78 via-[#061329]/18 to-transparent" />
+        <Image src="/images/delivery-rider-chachapoyas.webp" alt="Motociclista de ChachaFast listo para entrega en Chachapoyas" fill priority fetchPriority="high" sizes="(max-width: 430px) 100vw, 430px" className="object-cover object-[60%_center] brightness-[1.1] contrast-[1.06]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#061329]/92 via-[#061329]/48 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#061329]/88 via-[#061329]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#020817]/70 via-transparent to-transparent" />
 
-        <div className="relative z-10 px-6 pb-40 pt-6 sm:pb-48 sm:pt-8">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-[#061329]/42 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-amber-300 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)]" aria-hidden="true" />
+        <div className="relative z-10 px-6 pb-36 pt-7 sm:px-7 sm:pb-44 sm:pt-9">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-[#061329]/50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
             Delivery activo en Chachapoyas
           </div>
           <h1 className="max-w-[340px] text-4xl font-black leading-[1.08] text-white md:text-5xl">
             Tu delivery <span className="text-amber-400">rápido y seguro</span>
           </h1>
-          <p className="mt-5 max-w-[360px] text-[15px] font-medium leading-6 text-white/80 sm:text-base">
+          <p className="mt-5 max-w-[330px] text-[15px] font-medium leading-6 text-white/80 sm:text-base">
             Recojos, compras por encargo, medicamentos y encomiendas. Estamos cerca para ayudarte en minutos.
           </p>
-          <div className="mt-7 flex flex-col gap-3">
-            <button onClick={onSolicitar} type="button" className={`inline-flex w-full max-w-[340px] items-center justify-center gap-2.5 rounded-full bg-emerald-500 px-8 py-4 text-base font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-[0_4px_16px_rgba(16,185,129,0.40)] active:translate-y-0 ${FOCUS_VISIBLE}`} aria-label="Solicitar delivery por WhatsApp">
+          <div className="mt-8 flex max-w-[340px] flex-col items-center gap-2.5">
+            <button onClick={onSolicitar} type="button" className={`inline-flex min-h-14 w-full items-center justify-center gap-2.5 rounded-full bg-emerald-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_24px_-12px_rgba(16,185,129,0.8)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-[0_14px_28px_-12px_rgba(16,185,129,0.85)] active:translate-y-0 ${FOCUS_VISIBLE}`} aria-label="Solicitar delivery por WhatsApp">
               <IconoWhatsApp className="h-5 w-5" /> Solicitar Delivery
             </button>
-            <button onClick={onServicios} type="button" className={`flex min-h-14 w-full max-w-[340px] items-center justify-center gap-2 rounded-full border border-white/35 bg-slate-950/25 px-8 py-4 text-sm font-bold backdrop-blur-md transition-all duration-200 ease-out hover:border-white/50 hover:bg-white/10 active:scale-[0.98] ${FOCUS_VISIBLE}`}>
+            <button onClick={onServicios} type="button" className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-white/70 transition-colors duration-200 ease-out hover:text-white active:text-white/80 ${FOCUS_VISIBLE}`}>
               Explorar servicios
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m6 9 6 6 6-6" /></svg>
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m6 9 6 6 6-6" /></svg>
             </button>
           </div>
         </div>
 
-        <div className="absolute inset-x-3 bottom-3 z-10 grid grid-cols-3 gap-2">
+        <div className="absolute inset-x-3 bottom-3 z-10 grid min-h-[104px] grid-cols-3 overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/70 shadow-[0_18px_36px_-24px_rgba(2,8,23,0.9)] backdrop-blur-md">
           {[
             {icono:"rayo",titulo:"Entrega rápida",detalle:"en minutos"},
             {icono:"ubicacion",titulo:"Cobertura local",detalle:"en la ciudad"},
             {icono:"escudo",titulo:"Atención real",detalle:"y confiable"},
-          ].map(item => (
-            <div key={item.titulo} className="flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#061329]/28 px-2 py-3 text-center backdrop-blur-md">
-              <span className="flex h-7 w-7 items-center justify-center text-amber-300"><IconoBeneficio tipo={item.icono} /></span>
+          ].map((item, index) => (
+            <div key={item.titulo} className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-center ${index > 0 ? "border-l border-white/10" : ""}`}>
+              <span className="flex h-6 w-6 items-center justify-center text-amber-300"><IconoBeneficio tipo={item.icono} /></span>
               <span className="text-xs font-bold leading-4 text-white sm:text-sm">{item.titulo}</span>
-              <span className="text-[11px] leading-4 text-white/55">{item.detalle}</span>
+              <span className="text-[11px] font-medium leading-4 text-white/50">{item.detalle}</span>
             </div>
           ))}
         </div>
@@ -298,18 +299,18 @@ function Metricas() {
     {icono:"reloj",eyebrow:"Entrega en",valor:"45 min*",detalle:"Tiempo estimado",color:"text-amber-500"},
   ];
   return (
-    <section data-reveal aria-label="Datos del servicio" className="mx-4 mt-5 rounded-2xl bg-slate-950 text-white shadow-[0_16px_34px_-24px_rgba(2,12,32,0.7)]">
-      <div className="grid grid-cols-1 overflow-hidden rounded-2xl bg-slate-950 sm:grid-cols-3">
+    <section data-reveal aria-label="Datos del servicio" className="mx-4 mt-5 overflow-hidden rounded-2xl bg-slate-950 text-white shadow-[0_16px_34px_-24px_rgba(2,12,32,0.7)]">
+      <div className="grid grid-cols-3 bg-slate-950">
         {items.map((item, index) => (
-          <div key={item.valor} className={`relative flex flex-col items-center justify-center gap-1 px-4 py-6 text-center ${index > 0 ? "border-t border-white/10 sm:border-t-0" : ""} ${index < items.length - 1 ? "sm:border-r sm:border-white/10" : ""}`}>
-            <span className={`mb-1 flex h-8 w-8 items-center justify-center opacity-80 ${item.color}`}><IconoMetrica tipo={item.icono}/></span>
-            <span className="text-xs font-medium uppercase tracking-wider text-white/50">{item.eyebrow}</span>
-            <span className="text-xl font-black text-amber-400">{item.valor}</span>
-            <span className="text-xs text-white/45">{item.detalle}</span>
+          <div key={item.valor} className={`relative flex min-w-0 flex-col items-center justify-center px-2 py-5 text-center ${index < items.length - 1 ? "border-r border-white/10" : ""}`}>
+            <span className={`mb-2 flex h-7 w-7 items-center justify-center opacity-90 ${item.color}`}><IconoMetrica tipo={item.icono}/></span>
+            <span className="text-[9px] font-bold uppercase tracking-wide text-white/50 sm:text-xs">{item.eyebrow}</span>
+            <span className="mt-1 text-base font-black leading-tight text-amber-400 sm:text-xl">{item.valor}</span>
+            <span className="mt-1 hidden text-[10px] leading-4 text-white/45 min-[370px]:block sm:text-xs">{item.detalle}</span>
           </div>
         ))}
       </div>
-      <p className="px-4 pb-5 text-center text-[9px] font-medium text-white/45">*Tiempo referencial según zona, disponibilidad y tráfico.</p>
+      <p className="border-t border-white/[0.07] px-4 py-3 text-center text-[9px] font-medium text-white/45">*Tiempo referencial según zona, disponibilidad y tráfico.</p>
     </section>
   );
 }
@@ -317,12 +318,15 @@ function Metricas() {
 function Servicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
   return (
     <section id="servicios" className="scroll-mt-20 px-4 py-16">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-end justify-between gap-5">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-amber-600">Logística a tu medida</p>
           <h2 className="mt-2.5 text-3xl font-black leading-tight text-[#07172e]">Nuestros servicios</h2>
         </div>
-        <span className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">6 soluciones</span>
+        <div className="mb-0.5 shrink-0 border-l border-slate-300 pl-3 text-right">
+          <span className="block text-xl font-black leading-none text-[#07172e]">6</span>
+          <span className="mt-1 block text-[9px] font-bold uppercase tracking-wide text-slate-500">soluciones</span>
+        </div>
       </div>
       <p className="mt-4 max-w-[350px] text-sm font-medium leading-6 text-slate-600">Elige una operación y nuestro asistente coordinará contigo cada detalle.</p>
 
@@ -336,15 +340,15 @@ function Servicios({onSeleccionar}:{onSeleccionar:(servicio:Servicio)=>void}) {
 function TarjetaServicio({servicio,onSeleccionar}:{servicio:Servicio;onSeleccionar:(servicio:Servicio)=>void}) {
   return (
     <button data-reveal type="button" onClick={() => onSeleccionar(servicio)} aria-label={`Solicitar ${servicio.titulo}`}
-      className={`group relative h-full min-h-[226px] overflow-hidden rounded-2xl border border-slate-200/90 bg-[#fcfcfd] p-6 text-left shadow-[0_8px_22px_-18px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_28px_-18px_rgba(15,23,42,0.42)] active:translate-y-0 active:scale-[0.99] ${FOCUS_VISIBLE}`}>
+      className={`group relative h-full min-h-[196px] overflow-hidden rounded-2xl border border-slate-200/90 bg-[#fcfcfd] p-5 text-left shadow-[0_8px_22px_-18px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_28px_-18px_rgba(15,23,42,0.42)] active:translate-y-0 active:scale-[0.99] ${FOCUS_VISIBLE}`}>
       <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-amber-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden="true" />
-      <span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${servicio.estilo}`}>
+      <span className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ring-1 ${servicio.estilo}`}>
         <IconoServicio tipo={servicio.id}/>
       </span>
       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-emerald-600">{servicio.etiqueta}</p>
-      <h3 className="mb-2 text-lg font-extrabold leading-6 text-slate-900">{servicio.titulo}</h3>
-      <p className="pr-7 text-sm leading-6 text-slate-500">{servicio.descripcion}</p>
-      <span className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:border-emerald-500 group-hover:bg-emerald-500 group-hover:text-white">
+      <h3 className="mb-1.5 text-lg font-extrabold leading-6 text-slate-900">{servicio.titulo}</h3>
+      <p className="pr-8 text-sm leading-5 text-slate-500">{servicio.descripcion}</p>
+      <span className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700 transition-all duration-200 ease-out group-hover:translate-x-0.5 group-hover:border-emerald-500 group-hover:bg-emerald-500 group-hover:text-white">
         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
       </span>
     </button>
@@ -367,21 +371,21 @@ function Confianza({onSolicitar}:{onSolicitar:()=>void}) {
         <button onClick={onSolicitar} type="button" aria-label="Solicitar delivery por WhatsApp" className={`relative inline-flex w-full max-w-[340px] items-center justify-center gap-2.5 rounded-full bg-emerald-500 px-8 py-4 text-base font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-[0_4px_16px_rgba(16,185,129,0.40)] ${FOCUS_VISIBLE}`}>
           <IconoWhatsApp className="h-5 w-5"/> Solicitar ahora
         </button>
-        <div className="relative mt-6 flex flex-wrap justify-center gap-6">
-          <div className="flex items-center gap-1.5 text-sm text-white/60">
-            <span className="text-emerald-500"><IconoBeneficio tipo="escudo"/></span>
+        <div className="relative mt-7 flex flex-wrap justify-center gap-x-6 gap-y-3 border-t border-white/10 pt-6">
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/60">
+            <span className="flex h-5 w-5 items-center justify-center text-emerald-500"><IconoBeneficio tipo="escudo"/></span>
             Seguro y confiable
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-white/60">
-            <span className="text-emerald-500"><IconoBeneficio tipo="soporte"/></span>
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/60">
+            <span className="flex h-5 w-5 items-center justify-center text-emerald-500"><IconoBeneficio tipo="soporte"/></span>
             Atención personalizada
           </div>
         </div>
       </div>
 
-      <div data-reveal className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200/80 bg-[#fcfcfd] p-5 shadow-[0_8px_22px_-20px_rgba(15,23,42,0.3)]">
-        <div className="border-r border-slate-100 pr-3"><p className="text-xl font-black text-slate-900">100%</p><p className="mt-1 text-xs font-medium text-slate-500">Cobertura urbana en Chachapoyas</p></div>
-        <div className="pl-1"><p className="text-xl font-black text-slate-900">Atención real</p><p className="mt-1 text-xs font-medium text-slate-500">Coordinación directa por WhatsApp</p></div>
+      <div data-reveal className="mt-6 grid grid-cols-2 border-y border-slate-200 py-5">
+        <div className="border-r border-slate-200 pr-5"><p className="text-xl font-black text-slate-900">100%</p><p className="mt-1.5 text-xs font-medium leading-4 text-slate-500">Cobertura urbana en Chachapoyas</p></div>
+        <div className="pl-5"><p className="text-xl font-black text-slate-900">Atención real</p><p className="mt-1.5 text-xs font-medium leading-4 text-slate-500">Coordinación directa por WhatsApp</p></div>
       </div>
     </section>
   );
@@ -446,9 +450,9 @@ function Footer({onServicios,onAsistente}:{onServicios:()=>void;onAsistente:()=>
 
 function MenuMovil({abierto,onCerrar,onIr,onAsistente}:{abierto:boolean;onCerrar:()=>void;onIr:(id:string)=>void;onAsistente:()=>void}) {
   return (
-    <div className={`fixed inset-0 z-[70] transition-all duration-300 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
+    <div className={`fixed inset-0 z-[70] transition-all duration-200 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
       <button type="button" onClick={onCerrar} aria-label="Cerrar navegacion" className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity ${abierto?"opacity-100":"opacity-0"} ${FOCUS_VISIBLE}`} />
-      <aside className={`absolute inset-y-0 left-0 w-[82%] max-w-[340px] bg-[#061329] px-5 py-6 text-white shadow-2xl transition-transform duration-300 ${abierto?"translate-x-0":"-translate-x-full"}`}>
+      <aside className={`absolute inset-y-0 left-0 w-[82%] max-w-[340px] bg-[#061329] px-5 py-6 text-white shadow-2xl transition-transform duration-200 ease-out ${abierto?"translate-x-0":"-translate-x-full"}`}>
         <div className="flex items-center justify-between"><p className="text-xl font-black">Chacha<span className="text-amber-400">Fast</span></p><button type="button" onClick={onCerrar} aria-label="Cerrar menu" className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10 ${FOCUS_VISIBLE}`}><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18"/></svg></button></div>
         <nav role="navigation" className="mt-10 space-y-2" aria-label="Navegacion movil">
           <button onClick={() => onIr("inicio")} className={`flex min-h-[52px] w-full items-center rounded-2xl px-4 text-left text-sm font-black hover:bg-white/10 ${FOCUS_VISIBLE}`}>Inicio</button>
@@ -517,14 +521,14 @@ function AsistenteDelivery({abierto,servicio,sesion,onCerrar,onAbrir,onSeleccion
 
   return (
     <>
-      <button type="button" aria-label="Abrir asistente de WhatsApp" onClick={onAbrir} className={`fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full border border-amber-300/30 bg-[#07172e] p-2.5 text-white shadow-[0_18px_45px_-16px_rgba(2,12,32,0.8)] transition-all duration-300 hover:-translate-y-1 min-[390px]:pr-4 ${abierto?"pointer-events-none translate-y-5 opacity-0":"opacity-100"} ${FOCUS_VISIBLE}`}>
+      <button type="button" aria-label="Abrir asistente de WhatsApp" onClick={onAbrir} className={`fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full border border-amber-300/30 bg-[#07172e] p-2.5 text-white shadow-[0_18px_45px_-16px_rgba(2,12,32,0.8)] transition-all duration-200 ease-out hover:-translate-y-0.5 min-[420px]:pr-4 ${abierto?"pointer-events-none translate-y-5 opacity-0":"opacity-100"} ${FOCUS_VISIBLE}`}>
         <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-slate-950"><IconoChat/><span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[#07172e] bg-emerald-400"/></span>
-        <span className="hidden text-left min-[390px]:block"><span className="block text-[9px] font-semibold text-slate-400">Asistente en línea</span><span className="block text-xs font-black">¿Te ayudo?</span></span>
+        <span className="hidden text-left min-[420px]:block"><span className="block text-[9px] font-semibold text-slate-400">Asistente en línea</span><span className="block text-xs font-black">¿Te ayudo?</span></span>
       </button>
 
-      <div className={`fixed inset-0 z-[80] transition-all duration-500 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
-        <button type="button" onClick={onCerrar} aria-label="Cerrar asistente" className={`absolute inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity duration-500 ${abierto?"opacity-100":"opacity-0"} ${FOCUS_VISIBLE}`} />
-        <section aria-label="Asistente de delivery" className={`absolute inset-x-0 bottom-0 mx-auto flex h-[82dvh] max-h-[720px] max-w-[430px] flex-col overflow-hidden rounded-t-[2rem] bg-[#f7f9fc] shadow-[0_-25px_70px_-20px_rgba(2,12,32,0.6)] transition-transform duration-500 ease-out ${abierto?"translate-y-0":"translate-y-full"}`}>
+      <div className={`fixed inset-0 z-[80] transition-all duration-200 ${abierto?"visible":"invisible"}`} aria-hidden={!abierto}>
+        <button type="button" onClick={onCerrar} aria-label="Cerrar asistente" className={`absolute inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity duration-200 ${abierto?"opacity-100":"opacity-0"} ${FOCUS_VISIBLE}`} />
+        <section aria-label="Asistente de delivery" className={`absolute inset-x-0 bottom-0 mx-auto flex h-[82dvh] max-h-[720px] max-w-[430px] flex-col overflow-hidden rounded-t-[2rem] bg-[#f7f9fc] shadow-[0_-25px_70px_-20px_rgba(2,12,32,0.6)] transition-transform duration-200 ease-out ${abierto?"translate-y-0":"translate-y-full"}`}>
           <header className="shrink-0 bg-[#07172e] px-4 pb-4 pt-3 text-white">
             <div className="mx-auto mb-3 h-1 w-11 rounded-full bg-white/20" />
             <div className="flex items-center gap-3">
